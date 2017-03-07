@@ -1,7 +1,6 @@
 import urllib.request
 import urllib.response
-from HTMLParser import HTMLParser
-
+from  html.parser import HTMLParser
 
 class MyHTMLParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
@@ -27,12 +26,11 @@ class Crawler:
         f.close()
 
     def readPages(self):
-
+        pass
 
     def searchUrls(page):
         parser = MyHTMLParser()
         parser.feed(page)
 
     def getAllUrls(url):
-        while True:
-            url ,endpos = getPage
+        pass
