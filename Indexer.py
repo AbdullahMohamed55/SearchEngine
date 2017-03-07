@@ -41,10 +41,10 @@ test = Indexer()
 test.addToIndex("google","http://www.google.com")
 test.addToIndex("google","http://www.xxx.com")
 test.addToIndex("Google","http://www.xxx.com")
-print test.lookup("google")
-print test.lookup("Google")
-print test.lookup("gooogle")
+print (test.lookup("google"))
+print (test.lookup("Google"))
+print (test.lookup("gooogle"))
 
 
-print test.index
+print (test.index)
 '''
