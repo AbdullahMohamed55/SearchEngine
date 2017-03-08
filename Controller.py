@@ -1,3 +1,5 @@
+"""Currently of no use"""
+
 from Model import *
 
 class Controller:
