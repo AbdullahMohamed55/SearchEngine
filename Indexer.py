@@ -1,22 +1,65 @@
 import re
+from Model import *
+
+
 class Indexer:
 
     def __init__(self):
-        pass   #to be stored in database
-        self.index = {}
+        pass
 
-    #adds url to index[keyword]
-    def addToIndex(self, keyword, url):
+    #inserts a new entry(keyword,url)
+    def addToIndex(self, keyword, url, pos = [], importance = 0):
 
-        #check if keyword already exists
-        if keyword in self.index:
-            self.index[keyword].append(url)
-            return
+        try:
 
-        # not found, add new keyword to index
-        self.index.update({keyword : [url]})
+            IndexerTable.create(keyword= keyword , url = url, positions = pos, importance = importance).update()
 
+        except IntegrityError: #keyword & url already exists!
 
+            return -1
+
+        return 1
+
+    # returns dic[keyword]->[urls] of searched word(s) or -1
+    pass
+    def lookupWithWords(self, keywords = []):
+
+        result = {}
+
+        for word in keywords:
+            urlList = []
+            try:
+                resultQuery = IndexerTable.select(IndexerTable.url).where(IndexerTable.keyword == word)
+                for x in resultQuery:
+                    urlList.append(x.url)
+
+            except IndexerTable.DoesNotExist:
+                urlList.append(-1)
+
+            result.update({word: urlList})
+
+        return result
+
+    #maybe we won't need it!
+    def lookupWithPages(self, pages=[]):
+
+        result = {}
+
+        for pg in pages:
+            wordList = []
+            try:
+                resultQuery = IndexerTable.select(IndexerTable.keyword).where(IndexerTable.url == pg)
+                for x in resultQuery:
+                    wordList.append(x.keyword)
+
+            except IndexerTable.DoesNotExist:
+                wordList.append(-1)
+
+            result.update({pg: wordList})
+
+        return result
+
+    #deprecated
     def addPageToIndex(self, pageUrl):
         pass #parse html text and extract its content
         content = ""
@@ -26,14 +69,6 @@ class Indexer:
             self.addToIndex(word, pageUrl)
 
 
-    #returns list of urls of searched keyword or none
-    def lookup(self, keyword):
-
-        if keyword in self.index:
-
-            return self.index[keyword]
-
-        return None
 
     def parseKeywords(self,Urls):
         file_to_terms = {}
@@ -43,8 +78,14 @@ class Indexer:
             file_to_terms[url] = pattern.sub(' ',file_to_terms[url])
             re.sub(r'[\W_]+','', file_to_terms[url])
             file_to_terms[url] = file_to_terms[url].split()
+
+            #TODO
+            pass #if keyword is in the file more than once!
+            pass #extract keyword postion(s) in the file via .find() on original file (python list)
+            pass #keyword importance (title, header , plaintext) (int)
+
             for keyword in file_to_terms[url]:
-                self.addToIndex(keyword, url)
+                self.addToIndex(keyword, url) #TODO pass also position and importance
 '''
 text =
 pattern = re.compile('[\W_]+')
@@ -59,12 +100,23 @@ print (text)
 test = Indexer()
 
 test.addToIndex("google","http://www.google.com")
-test.addToIndex("google","http://www.xxx.com")
-test.addToIndex("Google","http://www.xxx.com")
+
 print (test.lookup("google"))
 print (test.lookup("Google"))
 print (test.lookup("gooogle"))
 
 
 print (test.index)
+'''
+'''
+DB.connect()
+#DB.create_tables([IndexerTable])
+test = Indexer()
+z = test.addToIndex("google","http://www.googlexx.com")
+xx = IndexerTable.get(IndexerTable.keyword == 'google')
+print(xx.url)
+print(z)
+
+search = test.lookup("gooqgle")
+print(search)
 '''
