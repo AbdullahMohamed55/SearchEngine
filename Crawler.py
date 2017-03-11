@@ -2,10 +2,13 @@ import urllib.request
 import urllib.response
 import urllib.parse
 import urllib.robotparser
+import os
+
 from html.parser import HTMLParser
 
 class MyHTMLParser(HTMLParser):
     def __init__(self, currentLink):
+        HTMLParser.__init__(self)
         self.links = []
         self.parsingLink = currentLink
     def handle_starttag(self, tag, attrs):
@@ -23,6 +26,8 @@ class MyHTMLParser(HTMLParser):
                     elif link.startswith('#'):
                         continue
                     elif link.startswith('ftp'):
+                        continue
+                    elif link.startswith('javascript'):
                         continue
                     self.links.append(link)
 
@@ -59,20 +64,23 @@ class Crawler:
                 self.visitedLinks.append(link)
                 self.visitedLinks.append(returnedLink)
 
-            webContent = response.read().decode('utf-8')
-            fileWritePath = self.downloadPath + link
-            if fileWritePath.endswith('/'):
-                fileWritePath += 'index.html'
-            f = open(fileWritePath, 'wb')
+            webContent = response.read()
+            fileWritePath = self.downloadPath + self.currentUrlComponents.netloc
+            fileWritePath += self.currentUrlComponents.path
+            if not os.path.exists(fileWritePath):
+                os.makedirs(fileWritePath)
+            fileWritePath += '/index.html'
+            f = open(fileWritePath, 'wb+')
             f.write(webContent)
             f.close()
             parser = MyHTMLParser(link)
-            parser.feed(webContent)
-            self.linksToVisit.append(parser.links)
+            parser.feed(str(webContent))
+            for l in parser.links:
+                self.linksToVisit.append(l)
 
     def setupRobotParser(self, url):
         rp = urllib.robotparser.RobotFileParser()
-        rp.set_url(urllib.parse.urljoin(self.currentUrlComponents.netloc, 'robots.txt'))
+        rp.set_url(urllib.parse.urljoin(self.currentUrlComponents.scheme + '://' + self.currentUrlComponents.netloc, 'robots.txt'))
         rp.read()
 
         return rp
