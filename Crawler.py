@@ -99,7 +99,6 @@ class Crawler:
 
             webContent = str(response.read())
 
-
             if WebPages.select().where(WebPages.pageURL == returnedLink).exists():
                 WebPages.update(pageContent = webContent).where(WebPages.pageURL == returnedLink).execute()
             else:
