@@ -10,12 +10,24 @@ class BaseModel(Model):
 
 class CrawledTable(BaseModel):
 
-    craweledURLs = CharField(unique =True)
+    crawledURL = CharField(unique =True)
 
-class UnCrawledTable(BaseModel):
+class UncrawledTable(BaseModel):
 
-    uncrawledURLs = CharField(unique = True)
+    uncrawledURL = CharField()
 
+class RobotTxts(BaseModel):
+    netLoc = CharField(unique=True)
+    robotContent = TextField()
+
+class WebPages(BaseModel):
+    pageURL = CharField(unique=True)
+    pageContent = TextField()
+
+class Seeds(BaseModel):
+    pageURL = CharField(unique=True)
+    crawlFrequency = IntegerField()
+    lastCrawl = DateTimeField()
 
 """INDEXER STUFF"""
 

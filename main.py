@@ -1,19 +1,18 @@
 from Model import *
 from Crawler import Crawler
 from Indexer import Indexer
-
-
-SEED_PATH = 'seeds.txt'
-DOWNLOAD_PATH = './pages/'
-
-#crawlerObj = Crawler(SEED_PATH, DOWNLOAD_PATH)
-#crawlerObj.start()
+from datetime import *
+import os
 
 DB.connect()
 
 """RUN this only once when creating tables!"""
-#sDB.create_tables([IndexerTable,UnCrawledTable,CrawledTable])
+if not DB.get_tables():
+    DB.create_tables([IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
+    Seeds(pageURL = 'https://www.reddit.com', crawlFrequency = 0, lastCrawl = datetime(1960, 1, 1, 1, 1, 1)).save()
 
 """our engine starts here"""
+crawlerObj = Crawler()
+crawlerObj.start()
 
 DB.close()
