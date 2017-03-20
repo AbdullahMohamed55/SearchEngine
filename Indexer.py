@@ -2,11 +2,18 @@ import re
 from Model import *
 from bs4 import BeautifulSoup
 import string
+import timeit
 
 class Indexer:
 
     def __init__(self):
         pass
+
+    def deleteOldEntries(self,url):
+
+        query = IndexerTable.delete().where(IndexerTable.url == url)
+        print("deleted ", query.execute(), "entries.")
+
 
     # inserts a new entry(keyword,url)
     def addToIndex(self, keyword, url, pos = [], importance = 2):
@@ -23,6 +30,9 @@ class Indexer:
 
     # returns dic[keyword]->[urls] of searched word(s) or -1
     pass
+
+    #for searching
+    '''IN: list of keywords OUT: dict[keyword] of urls'''
     def lookupWithWords(self, keywords = []):
 
         result = {}
@@ -41,7 +51,8 @@ class Indexer:
 
         return result
 
-    # maybe we won't need it!
+
+    '''IN: list of urls OUT: dict[url] of keywords'''
     def lookupWithPages(self, pages=[]):
 
         result = {}
@@ -60,14 +71,7 @@ class Indexer:
 
         return result
 
-    # deprecated
-    def addPageToIndex(self, pageUrl):
-        pass # parse html text and extract its content
-        content = ""
-        pass # split according to!
-        words = content.split()
-        for word in words:
-            self.addToIndex(word, pageUrl)
+    '''Parsing functions'''
 
     def indexFile(self,word_list):
         fileIndex = {}
@@ -79,12 +83,15 @@ class Indexer:
             else:
                 fileIndex[word] = [index]
         return fileIndex
+
+
     def assignImportance(self,keywords,count,imp,importance_map = {}):
 
         for word in keywords:
             if not (word in importance_map):
                 importance_map[word]= imp
                 count+=1
+
 
     def removeStopWords(self,s):
         # remove leading and trailing whitespace
@@ -94,13 +101,17 @@ class Indexer:
         # remove unwanted words
         return ' '.join(s.split())
 
+
     def parseKeywords(self,Text):
         Text = self.removeStopWords(Text)
         pattern = re.compile('[\W_]+')
         Text = pattern.sub(' ', Text)
         re.sub(r'[\W_]+', '', Text)
         return Text.split()
-    def parser(self,html_doc):
+
+
+    def parser(self,url,html_doc):
+
         soup = BeautifulSoup(html_doc, 'html.parser')
         html_doc = soup.get_text().lower()
         count = 0
@@ -108,7 +119,7 @@ class Indexer:
         if(soup.title.string is not None):
             title_keys = self.parseKeywords(soup.title.string.lower())
             self.assignImportance(title_keys,count,0,import_map)
-        headers_keys = [soup.h1 , soup.h2 , soup.h3 , soup.h4 \
+        headers_keys = [soup.h1 , soup.h2 , soup.h3 , soup.h4
                        , soup.h5 , soup.h6]
 
         headers_keys = [x.string.lower() for x in headers_keys if x is not None]
@@ -116,17 +127,29 @@ class Indexer:
         self.assignImportance(headers_keys,count,1,import_map)
         html_doc = self.parseKeywords(html_doc)
         self.assignImportance(html_doc,count,2,import_map)
-        return import_map,self.indexFile(self.parseKeywords(' '.join(html_doc)))
+
+        indexMap = self.indexFile(self.parseKeywords(' '.join(html_doc)))
+
+        pass
+        self.deleteOldEntries(url)
+
+        for word in import_map:
+            if(word in indexMap):
+                print(word,indexMap[word],import_map[word])
+                print(self.addToIndex(word,url,indexMap[word],import_map[word]))
+        print(len(indexMap))
+
+        #return import_map,self.indexFile(self.parseKeywords(' '.join(html_doc)))
 
 
 '''
 file = open("hi.html",'r').read().lower()
 indexer = Indexer()
-import_map,pos_map = indexer.parser(file)
-print(import_map)
-print (pos_map)
-
-
+indexer.parser("http://www.testxx.com",file)
+#print(import_map)
+#print (pos_map)
+'''
+'''
 file = open(,'wb')
 parser = MyHTMLParser()
 parser.feed(file)
