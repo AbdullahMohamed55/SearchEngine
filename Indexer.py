@@ -1,8 +1,10 @@
 import re
 from Model import *
+import urllib.request
 from bs4 import BeautifulSoup
-import string
-import timeit
+from bs4 import Comment
+from nltk.corpus import stopwords
+from nltk.stem.porter import *
 
 class Indexer:
 
@@ -92,27 +94,94 @@ class Indexer:
                 importance_map[word]= imp
                 count+=1
 
+    def visibleText(self,element):  # removing text in script and comment
+        if element.parent.name in ['style', 'script', 'link', '[document]']:
+            return False
 
-    def removeStopWords(self,s):
-        # remove leading and trailing whitespace
-        s = s.strip()
-        # remove punctuation in the string
-        s = s.strip(string.punctuation)
-        # remove unwanted words
-        return ' '.join(s.split())
-
+        elif re.match('.*<!--.*-->.*', str(element)):
+            return False
+        return True
 
     def parseKeywords(self,Text):
-        Text = self.removeStopWords(Text)
-        pattern = re.compile('[\W_]+')
-        Text = pattern.sub(' ', Text)
-        re.sub(r'[\W_]+', '', Text)
-        return Text.split()
+
+        for i in range(len(Text)):
+            pattern = re.compile('[\W_]+')
+            Text[i] = pattern.sub(' ', Text[i])
+            re.sub(r'[\W_]+', '', Text[i])
+            Text[i] = Text[i].lower()
+            Text += Text[i].split()
+            Text[i] = None
+
+        return Text
+
+    def removeStopWords(self,WordList):
+        stop = set(stopwords.words('english'))
+        WordList = [word for word in WordList if word not in stop and len(word) > 2]
+        return WordList
 
 
-    def parser(self,url,html_doc):
+    def initParser(self,Text):
 
-        soup = BeautifulSoup(html_doc, 'html.parser')
+
+        soup = BeautifulSoup(Text, 'html.parser')
+
+        # ---------------Finding Comments to remove them---------------
+        comments = soup.findAll(text=lambda text: isinstance(text, Comment))
+        [comment.extract() for comment in comments]
+
+        # ---------------Getting Text without Comments-------------------
+        texts = soup.find_all(text=True)
+
+
+        # ---------------removing the unwanted script and links from the doc and returning list of words------------
+        visible_texts = filter(self.visibleText, texts)
+
+        # ---------------remove all symbols like #$%@ , spaces and newlines--------------
+
+        parsedWords = self.parseKeywords(list(visible_texts))
+        parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
+        # remove stop words
+        parsedWords = self.removeStopWords(parsedWords)
+
+        # stemming words
+        '''stemmer = PorterStemmer()
+        for i in range(len(parsedWords)):
+            parsedWords[i] = stemmer.stem(parsedWords[i])     '''
+
+        return parsedWords
+    def parser(self, htmlDoc): #this function works on a html doc
+        #TODO loop on all urls in database and parse their documents
+        soup = BeautifulSoup(htmlDoc, 'html.parser')
+
+        count = 0
+        import_map ={}
+
+        #-----------------parsing Title and assigning its importance map----------------
+        if(soup.title.string is not None):
+            Title = self.initParser(str(soup.title))
+
+
+        self.assignImportance(Title,count,0,import_map)
+
+        #parsing headers
+        headers = [soup.h1 , soup.h2 , soup.h3 , soup.h4
+                       , soup.h5 , soup.h6]
+
+        headers = [str(x) for x in headers if x is not None]
+        headers = self.initParser(' '.join(headers))
+        self.assignImportance(headers, count, 1, import_map)
+
+
+        #---------------------parsing  plain text---------------------
+        plainText = self.initParser(htmlDoc)
+        self.assignImportance(plainText,count,2,import_map)
+
+        # --------------indexing words -------------
+        indexMap = self.indexFile(plainText)
+
+        return indexMap,import_map
+
+        '''soup = BeautifulSoup(html_doc, 'html.parser')
         html_doc = soup.get_text().lower()
         count = 0
         import_map = {}
@@ -140,8 +209,10 @@ class Indexer:
         print(len(indexMap))
 
         #return import_map,self.indexFile(self.parseKeywords(' '.join(html_doc)))
+        '''
 
-
+indexer = Indexer()
+indexer.parser(urllib.request.urlopen('http://news.yale.edu/2017/03/06/introducing-ds2-future-data-science-yale').read())
 '''
 file = open("hi.html",'r').read().lower()
 indexer = Indexer()
