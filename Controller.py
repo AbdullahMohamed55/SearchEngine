@@ -37,7 +37,7 @@ class Controller:
         print("TOOK ME ::" , stop-start, "secs")
 
 
-'''
+
 xx = Controller()
 xx.indexCrawledPages()
-'''
+#took 26 min! for 20 redit pages
