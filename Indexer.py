@@ -5,20 +5,36 @@ from bs4 import BeautifulSoup
 from bs4 import Comment
 from nltk.corpus import stopwords
 from nltk.stem.porter import *
+import timeit
 
 class Indexer:
 
     def __init__(self):
         pass
 
-    def deleteOldEntries(self,url):
+    def update(self,url,content):
+
+        #delete old entries of this url (if exists any)
+        self._deleteOldEntries(url)
+
+        #parse the webpage content
+        wordIndexes, wordImportance = self.parser(content)
+
+        for word in wordImportance:
+            if (word in wordIndexes):
+                print(word, wordIndexes[word], wordImportance[word])
+                print(self._addToIndex(word, url, wordIndexes[word], wordImportance[word]))
+
+
+
+    def _deleteOldEntries(self,url):
 
         query = IndexerTable.delete().where(IndexerTable.url == url)
         print("deleted ", query.execute(), "entries.")
 
 
     # inserts a new entry(keyword,url)
-    def addToIndex(self, keyword, url, pos = [], importance = 2):
+    def _addToIndex(self, keyword, url, pos = [], importance = 2):
 
         try:
 
@@ -75,11 +91,11 @@ class Indexer:
 
     '''Parsing functions'''
 
-    def indexFile(self,word_list):
+    def _indexFile(self,wordList):
         fileIndex = {}
         # input = [word1, word2, ...]
         # output = {word1: [pos1, pos2], word2: [pos2, pos3], ...}
-        for index, word in enumerate(word_list):
+        for index, word in enumerate(wordList):
             if word in fileIndex.keys():
                 fileIndex[word].append(index)
             else:
@@ -87,14 +103,15 @@ class Indexer:
         return fileIndex
 
 
-    def assignImportance(self,keywords,count,imp,importance_map = {}):
+    def _assignImportance(self,keywords,count,imp,importanceMap = {}):
 
         for word in keywords:
-            if not (word in importance_map):
-                importance_map[word]= imp
+            if not (word in importanceMap):
+                importanceMap[word]= imp
                 count+=1
 
-    def visibleText(self,element):  # removing text in script and comment
+    def _visibleText(self,element):  # removing text in script and comment
+
         if element.parent.name in ['style', 'script', 'link', '[document]']:
             return False
 
@@ -102,28 +119,30 @@ class Indexer:
             return False
         return True
 
-    def parseKeywords(self,Text):
+    def _parseKeywords(self,text):
 
-        for i in range(len(Text)):
+        for i in range(len(text)):
+
             pattern = re.compile('[\W_]+')
-            Text[i] = pattern.sub(' ', Text[i])
-            re.sub(r'[\W_]+', '', Text[i])
-            Text[i] = Text[i].lower()
-            Text += Text[i].split()
-            Text[i] = None
+            text[i] = pattern.sub(' ', text[i])
+            re.sub(r'[\W_]+', '', text[i])
+            text[i] = text[i].lower()
+            text += text[i].split()
+            text[i] = None
 
-        return Text
+        return text
 
-    def removeStopWords(self,WordList):
+    def _removeStopWords(self,wordList):
+
         stop = set(stopwords.words('english'))
-        WordList = [word for word in WordList if word not in stop and len(word) > 2]
-        return WordList
+        wordList = [word for word in wordList if word not in stop and len(word) > 2]
+        return wordList
 
 
-    def initParser(self,Text):
+    def _initParser(self,text):
 
 
-        soup = BeautifulSoup(Text, 'html.parser')
+        soup = BeautifulSoup(text, 'html.parser')
 
         # ---------------Finding Comments to remove them---------------
         comments = soup.findAll(text=lambda text: isinstance(text, Comment))
@@ -134,151 +153,52 @@ class Indexer:
 
 
         # ---------------removing the unwanted script and links from the doc and returning list of words------------
-        visible_texts = filter(self.visibleText, texts)
+        visible_texts = filter(self._visibleText, texts)
 
         # ---------------remove all symbols like #$%@ , spaces and newlines--------------
 
-        parsedWords = self.parseKeywords(list(visible_texts))
+        parsedWords = self._parseKeywords(list(visible_texts))
         parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
         # remove stop words
-        parsedWords = self.removeStopWords(parsedWords)
+        parsedWords = self._removeStopWords(parsedWords)
 
         # stemming words
-        '''stemmer = PorterStemmer()
+        pass #NOW??
+        '''
+        stemmer = PorterStemmer()
         for i in range(len(parsedWords)):
-            parsedWords[i] = stemmer.stem(parsedWords[i])     '''
-
+            parsedWords[i] = stemmer.stem(parsedWords[i])
+        '''
         return parsedWords
-    def parser(self, htmlDoc): #this function works on a html doc
-        #TODO loop on all urls in database and parse their documents
-        soup = BeautifulSoup(htmlDoc, 'html.parser')
 
+    def parser(self, htmlDoc): #this function works on a html doc
+
+
+        soup = BeautifulSoup(htmlDoc, 'html.parser')
         count = 0
-        import_map ={}
+        importMap ={}
 
         #-----------------parsing Title and assigning its importance map----------------
         if(soup.title.string is not None):
-            Title = self.initParser(str(soup.title))
+            title = self._initParser(str(soup.title))
 
-
-        self.assignImportance(Title,count,0,import_map)
+        self._assignImportance(title,count,0,importMap)
 
         #parsing headers
         headers = [soup.h1 , soup.h2 , soup.h3 , soup.h4
                        , soup.h5 , soup.h6]
 
         headers = [str(x) for x in headers if x is not None]
-        headers = self.initParser(' '.join(headers))
-        self.assignImportance(headers, count, 1, import_map)
+        headers = self._initParser(' '.join(headers))
+        self._assignImportance(headers, count, 1, importMap)
 
 
         #---------------------parsing  plain text---------------------
-        plainText = self.initParser(htmlDoc)
-        self.assignImportance(plainText,count,2,import_map)
+        plainText = self._initParser(htmlDoc)
+        self._assignImportance(plainText,count,2,importMap)
 
         # --------------indexing words -------------
-        indexMap = self.indexFile(plainText)
-
-        return indexMap,import_map
-
-        '''soup = BeautifulSoup(html_doc, 'html.parser')
-        html_doc = soup.get_text().lower()
-        count = 0
-        import_map = {}
-        if(soup.title.string is not None):
-            title_keys = self.parseKeywords(soup.title.string.lower())
-            self.assignImportance(title_keys,count,0,import_map)
-        headers_keys = [soup.h1 , soup.h2 , soup.h3 , soup.h4
-                       , soup.h5 , soup.h6]
-
-        headers_keys = [x.string.lower() for x in headers_keys if x is not None]
-        headers_keys = self.parseKeywords(''.join(headers_keys))
-        self.assignImportance(headers_keys,count,1,import_map)
-        html_doc = self.parseKeywords(html_doc)
-        self.assignImportance(html_doc,count,2,import_map)
-
-        indexMap = self.indexFile(self.parseKeywords(' '.join(html_doc)))
-
-        pass
-        self.deleteOldEntries(url)
-
-        for word in import_map:
-            if(word in indexMap):
-                print(word,indexMap[word],import_map[word])
-                print(self.addToIndex(word,url,indexMap[word],import_map[word]))
-        print(len(indexMap))
-
-        #return import_map,self.indexFile(self.parseKeywords(' '.join(html_doc)))
-        '''
-
-indexer = Indexer()
-indexer.parser(urllib.request.urlopen('http://news.yale.edu/2017/03/06/introducing-ds2-future-data-science-yale').read())
-'''
-file = open("hi.html",'r').read().lower()
-indexer = Indexer()
-indexer.parser("http://www.testxx.com",file)
-#print(import_map)
-#print (pos_map)
-'''
-'''
-file = open(,'wb')
-parser = MyHTMLParser()
-parser.feed(file)
-print (parser.imp_map)
-
-text =
-pattern = re.compile('[\W_]+')
-text = pattern.sub(' ',text)
-print (text)
-print (re.sub(r'[\W_]+','', text))
-text = text.split()
-print (text)
+        indexMap = self._indexFile(plainText)
 
 
-
-test = Indexer()
-
-test.addToIndex("google","http://www.google.com")
-
-print (test.lookup("google"))
-print (test.lookup("Google"))
-print (test.lookup("gooogle"))
-
-
-print (test.index)
-'''
-'''
-DB.connect()
-#DB.create_tables([IndexerTable])
-test = Indexer()
-z = test.addToIndex("google","http://www.googlexx.com")
-xx = IndexerTable.get(IndexerTable.keyword == 'google')
-print(xx.url)
-print(z)
-
-search = test.lookup("gooqgle")
-print(search)
-'''
-
-
-'''def parseKeywordsTry(self, Urls):  # this func is not used
-    file_to_terms = {}
-    for url in Urls:
-
-        pattern = re.compile('[\W_]+')
-        file_to_terms[url] = open(url, 'r').read().lower()
-        file_to_terms[url] = pattern.sub(' ', file_to_terms[url])
-        re.sub(r'[\W_]+', '', file_to_terms[url])
-        file_to_terms[url] = file_to_terms[url].split()
-
-        # TODO
-        pass  # if keyword is in the file more than once!
-        pass  # extract keyword postion(s) in the file via .find() on original file (python list)
-        ''' '''Done using func indexFile if the word occur more than once the
-        first word only will be recorded . the title and header will be in first of the file
-        ''''''
-        pass  # keyword importance (title, header , plaintext) (int)
-
-        for keyword in file_to_terms[url]:
-            self.addToIndex(keyword, url)  # TODO pass also position and importance
-'''
+        return indexMap,importMap
