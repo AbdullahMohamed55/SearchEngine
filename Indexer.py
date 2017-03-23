@@ -1,11 +1,9 @@
-import re
 from Model import *
-import urllib.request
-from bs4 import BeautifulSoup
 from bs4 import Comment
-from nltk.corpus import stopwords
+from bs4 import BeautifulSoup
 from nltk.stem.porter import *
-import timeit
+from nltk.corpus import stopwords
+
 
 class Indexer:
 
