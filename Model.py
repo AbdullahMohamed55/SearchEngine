@@ -1,6 +1,6 @@
 from peewee import *
 
-DB = SqliteDatabase("SearchEngine.db")
+DB = SqliteDatabase("SearchEngine.db", threadlocals=True)
 
 
 class BaseModel(Model):
@@ -14,7 +14,7 @@ class CrawledTable(BaseModel):
 
 class UncrawledTable(BaseModel):
 
-    uncrawledURL = CharField()
+    uncrawledURL = CharField(unique = True)
 
 class RobotTxts(BaseModel):
     netLoc = CharField(unique=True)
