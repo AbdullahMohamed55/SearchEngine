@@ -2,6 +2,7 @@ from peewee import *
 
 DB = SqliteDatabase("SearchEngine.db", threadlocals=True)
 
+''''---------------------------------------------CRAWLER Stuff-------------------------------------------------------'''
 
 class BaseModel(Model):
     class Meta:
@@ -17,44 +18,23 @@ class UncrawledTable(BaseModel):
     uncrawledURL = CharField(unique = True)
 
 class RobotTxts(BaseModel):
+
     netLoc = CharField(unique=True)
     robotContent = TextField()
 
 class WebPages(BaseModel):
+
     pageURL = CharField(unique=True)
     pageContent = TextField()
 
 class Seeds(BaseModel):
+
     pageURL = CharField(unique=True)
     crawlFrequency = IntegerField()
     lastCrawl = DateTimeField()
 
-"""INDEXER STUFF"""
 
-class PositionsField(CharField):
-
-    '''convert python datatype for storage in the database'''
-    def db_value(self, value):
-
-        dbValue = ''
-        for x in range(0,len(value)-1):
-            dbValue += str(value[x])
-            dbValue += ","
-
-        if value:
-            dbValue += str(value[len(value)-1])
-        #print(dbValue)
-        return dbValue
-
-    '''convert datatype from database to python '''
-    def python_value(self, value):
-
-        result = []
-        for i in range(0,len(value),2):
-            result.append(int(value[i]))
-
-        #print (result)
-        return result
+''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
 
 class IndexerTable(Model):
 
@@ -68,28 +48,26 @@ class IndexerTable(Model):
         primary_key = CompositeKey('keyword', 'url')
 
 
-'''
+class PositionsField(CharField):
 
-DB.connect()
+    '''convert python data type for storage in the database'''
+    def db_value(self, value):
 
-#in init onllyyy
-DB.create_tables([IndexerTable])
+        dbValue = ''
+        for x in range(0,len(value)-1):
+            dbValue += str(value[x])
+            dbValue += ","
 
-ahmed = IndexerTable.create(keyword = "bibo",urls ="www.vvv.com", positions = "123")
-#ahmed.urls.append("www.vvv.com")
-#ahmed.save()
-#ahmed = IndexerTable.select().where(IndexerTable.urls == 'www.vvv.com').get()
-##OR SIMPLY
-#ahmed = IndexerTable.get(IndexerTable.keyword == 'bibo')
-print(ahmed.urls , ahmed.positions)
-#ahmed.delete_instance()
-l = list(ahmed.positions)
+        if value:
+            dbValue += str(value[len(value)-1])
 
-print(int(l[0]))
-#ahmed.positions = l
-#ahmed.save()
-print(ahmed.urls , ahmed.positions)
-#print(IndexerTable.get(IndexerTable.keyword == 'bibo').positions)
+        return dbValue
 
-DB.close()
-'''
+    '''convert data type from database to python '''
+    def python_value(self, value):
+
+        result = []
+        for i in range(0,len(value),2):
+            result.append(int(value[i]))
+
+        return result
