@@ -45,7 +45,7 @@ class MyHTMLParser(HTMLParser):
 #
 class Crawler(threading.Thread):
 
-    dbLock = threading.Lock() 
+    dbLock = threading.Lock()
     def __init__(self, cID):
         threading.Thread.__init__(self)
         self.crawlerID = cID

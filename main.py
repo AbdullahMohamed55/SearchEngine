@@ -11,7 +11,7 @@ DB.connect()
 """RUN this only once when creating tables!"""
 if not DB.get_tables():
     DB.create_tables([IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
-    Seeds(pageURL = 'https://www.reddit.com', crawlFrequency = 0, lastCrawl = datetime(1960, 1, 1, 1, 1, 1)).save()
+    Seeds(pageURL = 'https://www.reddit.com', crawlFrequency = 1, lastCrawl = datetime(1960, 1, 1, 1, 1, 1)).save()
 
 """our engine starts here"""
 
