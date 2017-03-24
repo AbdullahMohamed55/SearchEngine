@@ -40,6 +40,7 @@ class Crawler(threading.Thread):
                 try:
                     ##
                     locker = Crawler.dbLock.acquire()
+                    print(Crawler.dbLock)
                     ###############################
                     print('Thread ' + str(self.crawlerID) + ': Lock acquired, Getting link.')
                     pass #TODO ?
@@ -78,8 +79,6 @@ class Crawler(threading.Thread):
                     print('Thread ' + str(self.crawlerID) + ': Crawling link: ' + link)
                     self.crawl(link)
                     print('Thread ' + str(self.crawlerID) + ': Done crawling link: ' + link)
-                    CrawledTable.create(crawledURL=link).update()
-                    print("CRAWLED URLS = ", CrawledTable.select().count())
 
                 except IntegrityError:
                     pass #TODO ?
