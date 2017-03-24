@@ -1,52 +1,22 @@
-import urllib.request
-import urllib.response
-import urllib.parse
-import urllib.robotparser
-import threading
-import os
-from datetime import *
 import time
+import threading
 from Model import *
-
-import bs4
-
+import urllib.parse
+import urllib.request
+from datetime import *
+import urllib.response
+import urllib.robotparser
 from html.parser import HTMLParser
-#
+
 
 NUMOFPAGES = 10000
-class MyHTMLParser(HTMLParser):
-    def __init__(self, currentLink):
-        HTMLParser.__init__(self)
-        self.links = []
-        self.parsingLink = currentLink
-    def handle_starttag(self, tag, attrs):
-        # Only parse the 'anchor' tag.
-        if tag == "a":
-            # Check the list of defined attributes.
-            for name, value in attrs:
-                # If href is defined, print it.
-                if name == "href":
-                    link = value
-                    if link.startswith('//'):
-                        link = 'http:' + link
-                    elif link.startswith('/'):
-                        link = urllib.parse.urljoin(self.parsingLink, link)
-                    if '#' in link:
-                        continue
-                    elif link.startswith('ftp'):
-                        continue
-                    elif link.startswith('javascript'):
-                        continue
-                    parsedLink = urllib.parse.urlparse(link)
-                    link = parsedLink.scheme + '://' + parsedLink.netloc
-                    if link[-1] != '/':
-                        link = link + '/'
-                    self.links.append({'uncrawledURL': link})
-#
+
 class Crawler(threading.Thread):
 
     dbLock = threading.Lock()
+
     def __init__(self, cID):
+
         threading.Thread.__init__(self)
         self.crawlerID = cID
         for seed in Seeds.select():
@@ -59,10 +29,12 @@ class Crawler(threading.Thread):
                 seed.lastCrawl = datetime.now()
                 seed.save()
 
-    def run(self):
-        tryTwice = 0
-        while True:
 
+    def run(self):
+
+        tryTwice = 0
+
+        while True:
             ##
             Crawler.dbLock.acquire()
             ###############################
@@ -97,8 +69,8 @@ class Crawler(threading.Thread):
         RobotTxts.delete().execute()
 
 
-
     def crawl(self, link):
+
         if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
             print('Thread ' + str(self.crawlerID) + ': Link already visited.')
             return
@@ -143,9 +115,14 @@ class Crawler(threading.Thread):
             parser = MyHTMLParser(link)
             parser.feed(str(webContent))
             with DB.atomic():
-                UncrawledTable.insert_many(parser.links).upsert().execute()
+                size = 999
+                for i in range(0, len(parser.links), size):
+                    UncrawledTable.insert_many(parser.links[i:i+size]).upsert().execute()
             print('Thread ' + str(self.crawlerID) + ': Done inserting links ' + link)
+
+
     def setupRobotParser(self, url):
+
         rp = urllib.robotparser.RobotFileParser()
 
         currentUrlComponents = urllib.parse.urlparse(url)
@@ -163,6 +140,41 @@ class Crawler(threading.Thread):
             rp.parse(robotContentFromInternet)
             RobotTxts(netLoc = robotLocation, robotContent = robotContentFromInternet).save()
 
-
-
         return rp
+
+
+'''---------------------------------------------HTML Parser----------------------------------------------------------'''
+
+class MyHTMLParser(HTMLParser):
+
+    def __init__(self, currentLink):
+
+        HTMLParser.__init__(self)
+        self.links = []
+        self.parsingLink = currentLink
+
+
+    def handle_starttag(self, tag, attrs):
+
+        # Only parse the 'anchor' tag.
+        if tag == "a":
+            # Check the list of defined attributes.
+            for name, value in attrs:
+                # If href is defined, print it.
+                if name == "href":
+                    link = value
+                    if link.startswith('//'):
+                        link = 'http:' + link
+                    elif link.startswith('/'):
+                        link = urllib.parse.urljoin(self.parsingLink, link)
+                    if '#' in link:
+                        continue
+                    elif link.startswith('ftp'):
+                        continue
+                    elif link.startswith('javascript'):
+                        continue
+                    parsedLink = urllib.parse.urlparse(link)
+                    link = parsedLink.scheme + '://' + parsedLink.netloc
+                    if link[-1] != '/':
+                        link = link + '/'
+                    self.links.append({'uncrawledURL': link})
