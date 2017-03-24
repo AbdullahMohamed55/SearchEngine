@@ -101,9 +101,6 @@ class Crawler(threading.Thread):
 
     def crawl(self, link):
 
-        if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
-            print('Thread ' + str(self.crawlerID) + ': Link already visited.')
-            return
         tryOnce = 0
         robotParser = self.setupRobotParser(link)
         if robotParser.can_fetch("*", link):
