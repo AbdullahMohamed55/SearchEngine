@@ -1,9 +1,9 @@
-import time
 import threading
 from Model import *
 import urllib.parse
 import urllib.request
 from datetime import *
+from time import sleep
 import urllib.response
 import urllib.robotparser
 from html.parser import HTMLParser
@@ -49,7 +49,7 @@ class Crawler(threading.Thread):
                     print('Thread ' + str(self.crawlerID) + ': No links available. Ending crawl.')
                     break
                 print('Thread ' + str(self.crawlerID) + ': No links available. Sleeping for 60 seconds. Attempt: ' + str(tryTwice + 1))
-                time.sleep(60)
+                sleep(60)
                 tryTwice = tryTwice + 1
                 continue
             tryTwice = 0
@@ -88,7 +88,7 @@ class Crawler(threading.Thread):
                                 'Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' returning.')
                             return
                         print('Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' trying again in 120 seconds.')
-                        time.sleep(120)
+                        sleep(120)
                         tryOnce = 1
                     else:
                         return
