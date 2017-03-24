@@ -39,6 +39,7 @@ class Crawler(threading.Thread):
             Crawler.dbLock.acquire()
             ###############################
             print('Thread ' + str(self.crawlerID) + ': Lock acquired, Getting link.')
+            pass #TODO ?
             if WebPages.select().count() == NUMOFPAGES:
                 print('Thread ' + str(self.crawlerID) + ': Target reached, ending crawl')
                 break
@@ -55,6 +56,7 @@ class Crawler(threading.Thread):
             tryTwice = 0
             linkQuery = linkQuery.get()
             link = linkQuery.uncrawledURL
+            pass #db lock exception
             linkQuery.delete_instance()
             CrawledTable(crawledURL=link).insert().upsert()
             print('Thread ' + str(self.crawlerID) + ': Done getting link, releasing lock.')
@@ -71,55 +73,65 @@ class Crawler(threading.Thread):
 
     def crawl(self, link):
 
-        if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
-            print('Thread ' + str(self.crawlerID) + ': Link already visited.')
-            return
-        tryOnce = 0
-        robotParser = self.setupRobotParser(link)
-        if robotParser.can_fetch("*", link):
-            while True:
-                try:
-                    response = urllib.request.urlopen(link)
-                    break
-                except urllib.error.HTTPError as e:
-                    if e.code == 429:
-                        if tryOnce == 1:
-                            print(
-                                'Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' returning.')
+        try:
+            if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
+                print('Thread ' + str(self.crawlerID) + ': Link already visited.')
+                return
+            tryOnce = 0
+            robotParser = self.setupRobotParser(link)
+            if robotParser.can_fetch("*", link):
+                while True:
+                    try:
+                        response = urllib.request.urlopen(link)
+                        break
+                    except urllib.error.HTTPError as e:
+                        pass #TODO urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:749)>
+                        if e.code == 429:
+                            if tryOnce == 1:
+                                print(
+                                    'Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' returning.')
+                                return
+                            print('Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' trying again in 120 seconds.')
+                            sleep(120)
+                            tryOnce = 1
+                        else:
                             return
-                        print('Thread ' + str(self.crawlerID) + ': Too many requests: ' + link + ' trying again in 120 seconds.')
-                        sleep(120)
-                        tryOnce = 1
-                    else:
-                        return
 
-            returnedLink = response.geturl()
-            if returnedLink != link:
-                print('Thread ' + str(self.crawlerID) + ': Redirection:' + link + ' returning.')
-                return
+                returnedLink = response.geturl()
+                if returnedLink != link:
+                    print('Thread ' + str(self.crawlerID) + ': Redirection:' + link + ' returning.')
+                    return
 
-            urlInfo = response.info()
-            dataType = urlInfo.get_content_type()
-            if 'html' not in dataType:
-                print('Thread ' + str(self.crawlerID) + ': Not HTML ' + link + ' returning.')
-                return
+                urlInfo = response.info()
+                dataType = urlInfo.get_content_type()
+                if 'html' not in dataType:
+                    print('Thread ' + str(self.crawlerID) + ': Not HTML ' + link + ' returning.')
+                    return
 
-            webContent = str(response.read())
+                webContent = str(response.read())
 
-            if WebPages.select().where(WebPages.pageURL == returnedLink).exists():
-                WebPages.update(pageContent = webContent).where(WebPages.pageURL == returnedLink).execute()
-            else:
-                print('Thread ' + str(self.crawlerID) + ': Saving webpage ' + link )
-                WebPages(pageURL = returnedLink, pageContent = webContent).save()
-            print('Thread ' + str(self.crawlerID) + ': Done saving webpage and starting link extraction ' + link)
-            parser = MyHTMLParser(link)
-            parser.feed(str(webContent))
-            with DB.atomic():
-                size = 999
-                for i in range(0, len(parser.links), size):
-                    UncrawledTable.insert_many(parser.links[i:i+size]).upsert().execute()
-            print('Thread ' + str(self.crawlerID) + ': Done inserting links ' + link)
+                if WebPages.select().where(WebPages.pageURL == returnedLink).exists():
+                    WebPages.update(pageContent = webContent).where(WebPages.pageURL == returnedLink).execute()
+                else:
+                    print('Thread ' + str(self.crawlerID) + ': Saving webpage ' + link )
+                    pass #peewee.IntegrityError: UNIQUE constraint failed: webpages.pageURL
+                    WebPages(pageURL = returnedLink, pageContent = webContent).save()
+                print('Thread ' + str(self.crawlerID) + ': Done saving webpage and starting link extraction ' + link)
+                parser = MyHTMLParser(link)
+                parser.feed(str(webContent))
+                with DB.atomic():
+                    size = 999
+                    for i in range(0, len(parser.links), size):
+                        UncrawledTable.insert_many(parser.links[i:i+size]).upsert().execute()
+                print('Thread ' + str(self.crawlerID) + ': Done inserting links ' + link)
 
+        except IntegrityError:
+            pass #TODO ?
+            print("IntegrityError has occurred by thread " + str(self.crawlerID) + " !")
+            pass
+        except OperationalError:
+            pass  # TODO ?
+            print("Database is locked while thread " + str(self.crawlerID) + " tried to access it!")
 
     def setupRobotParser(self, url):
 
