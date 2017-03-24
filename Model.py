@@ -36,18 +36,6 @@ class Seeds(BaseModel):
 
 ''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
 
-class IndexerTable(Model):
-
-    keyword = CharField()
-    url = CharField()
-    positions = PositionsField(default = [])
-    importance = IntegerField() # 0-> title , 1-> header, 2->plain text
-
-    class Meta:
-        database = DB
-        primary_key = CompositeKey('keyword', 'url')
-
-
 class PositionsField(CharField):
 
     '''convert python data type for storage in the database'''
@@ -71,3 +59,15 @@ class PositionsField(CharField):
             result.append(int(value[i]))
 
         return result
+
+
+class IndexerTable(Model):
+
+    keyword = CharField()
+    url = CharField()
+    positions = PositionsField(default = [])
+    importance = IntegerField() # 0-> title , 1-> header, 2->plain text
+
+    class Meta:
+        database = DB
+        primary_key = CompositeKey('keyword', 'url')
