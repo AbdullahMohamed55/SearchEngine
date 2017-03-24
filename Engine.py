@@ -22,6 +22,7 @@ class Engine:
     def _getDBTables(self):
 
         if not DB.get_tables():
+            print("Creating Database...")
             DB.create_tables([IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
             Seeds(pageURL='https://www.reddit.com', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
 
@@ -48,7 +49,7 @@ class Engine:
 
         tryFor = 10 #times
         while(tryFor != 0 ):
-            print("Indexer will try to index again after 60 seconds.")
+            print("Indexer will try to index after 60 seconds.")
             sleep(60) #give time for crawling threads to add new urls
             self._indexCrawledPages()
             tryFor -= 1
