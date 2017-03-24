@@ -1,4 +1,5 @@
 from Model import *
+import re
 from bs4 import Comment
 from bs4 import BeautifulSoup
 from nltk.stem.porter import *
@@ -21,7 +22,9 @@ class Indexer:
 
         #insert page extracted words in a list for bulk db insertions
         for word in wordImportance:
-            if (word in wordIndexes):
+            pass
+            ##avoiding alphaNum words...
+            if (word in wordIndexes and not re.search('\d+',word) and not word.startswith('x')):
                 bulkEntries.append({'keyword' : word ,'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
 
         if(bulkEntries):

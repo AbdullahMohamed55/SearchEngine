@@ -47,13 +47,14 @@ class Engine:
         for i in range(len(self.crawlerObjs)):
             self.crawlerObjs[i].start()
 
-        tryFor = 10 #times
-        while(tryFor != 0 ):
+        tryFor = 0 #times
+        while(tryFor != 0):
             print("Indexer will try to index after 60 seconds.")
             sleep(60) #give time for crawling threads to add new urls
             self._indexCrawledPages()
             tryFor -= 1
 
+        return
 
     '''Indexes newly crawled web pages'''
     def _indexCrawledPages(self):
@@ -62,6 +63,10 @@ class Engine:
         start = timeit.default_timer()
         count = 0
         try:
+            print("WebPages table entries: ", WebPages.select().count())
+            print("Crawled table entries: ", CrawledTable.select().count())
+            print("Uncrawled table entries: ", UncrawledTable.select().count())
+
             for page in WebPages.select():
 
                 count += 1
@@ -87,3 +92,5 @@ class Engine:
         self._indexCrawledPages()
         #close db
         DB.close()
+
+        return
