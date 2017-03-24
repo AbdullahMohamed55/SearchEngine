@@ -24,13 +24,14 @@ class Indexer:
             if (word in wordIndexes):
                 bulkEntries.append({'keyword' : word ,'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
 
-        #insert new entries in IndexerTable...Fastest way!
-        with DB.atomic():
-            #sqlite max vars = 999 per bulk insertion
-            size = (999 // len(bulkEntries[0]))
-            for i in range(0, len(bulkEntries), size):
-                IndexerTable.insert_many(bulkEntries[i:i + size]).upsert().execute()
-        print("Inserted:",len(bulkEntries),"new entries for url:",url)
+        if(bulkEntries):
+            #insert new entries in IndexerTable...Fastest way!
+            with DB.atomic():
+                #sqlite max vars = 999 per bulk insertion
+                size = (999 // len(bulkEntries[0]))
+                for i in range(0, len(bulkEntries), size):
+                    IndexerTable.insert_many(bulkEntries[i:i + size]).upsert().execute()
+            print("Inserted:",len(bulkEntries),"new entries for url:",url)
 
 
     def _deleteOldEntries(self,url):
@@ -172,10 +173,10 @@ class Indexer:
         importMap ={}
 
         #-----------------parsing Title and assigning its importance map----------------
-        if(soup.title.string is not None):
+        if(soup.title and soup.title.string is not None):
             title = self._initParser(str(soup.title))
 
-        self._assignImportance(title,count,0,importMap)
+            self._assignImportance(title,count,0,importMap)
 
         #parsing headers
         headers = [soup.h1 , soup.h2 , soup.h3 , soup.h4
