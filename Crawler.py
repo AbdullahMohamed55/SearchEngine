@@ -9,7 +9,7 @@ import urllib.robotparser
 from html.parser import HTMLParser
 
 
-NUMOFPAGES = 10
+NUMOFPAGES = 100
 
 class Crawler(threading.Thread):
     numberOfThreads = 0
@@ -92,14 +92,20 @@ class Crawler(threading.Thread):
                             pass
                         Crawler.assignedLock.release()
                         Crawler.linksLock.release()
-                        with DB.atomic():
-                            while True:
-                                try:
-                                    UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+
+                        while True:
+                            try:
+                                UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+                                break
+                            except OperationalError as e:
+                                if 'binding' in str(e):
                                     break
-                                except OperationalError:
-                                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                                    pass
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                sleep(1)
+                                pass
+                            except:
+                                break
+
 
 
 
@@ -114,14 +120,20 @@ class Crawler(threading.Thread):
 
                     print('Thread ' + str(self.crawlerID) + ': Crawling link: ' + link)
                     self.crawl(link)
-                    with DB.atomic():
-                        while True:
-                            try:
-                                UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+
+                    while True:
+                        try:
+                            UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+                            break
+                        except OperationalError as e:
+                            if 'binding' in str(e):
                                 break
-                            except OperationalError:
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                                pass
+                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            sleep(1)
+                            pass
+                        except:
+                            break
+
 
                     Crawler.linksLock.acquire()
                     Crawler.assignedLock.acquire()
@@ -132,14 +144,20 @@ class Crawler(threading.Thread):
                         pass
                     Crawler.assignedLock.release()
                     Crawler.linksLock.release()
-                    with DB.atomic():
-                        while True:
-                            try:
-                                CrawledTable.create(crawledURL=link).update()
+
+                    while True:
+                        try:
+                            CrawledTable.create(crawledURL=link).update()
+                            break
+                        except OperationalError as e:
+                            if 'binding' in str(e):
                                 break
-                            except OperationalError:
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                                pass
+                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            sleep(1)
+                            pass
+                        except:
+                            break
+
 
 
                     print('Thread ' + str(self.crawlerID) + ': Done crawling link: ' + link)
@@ -236,7 +254,7 @@ class Crawler(threading.Thread):
 
 
             try:
-                webContent = str(response.read())
+                webContent = response.read().decode(response.headers.get_content_charset('utf-8'))
             except:
                 print("Incomplete Read of web content due to a defective http server.")
                 webContent = None
@@ -253,29 +271,41 @@ class Crawler(threading.Thread):
                 Crawler.webpagesLock.release()
                 if WebPages.select().where(WebPages.pageURL == returnedLink).exists():
                     print('Thread ' + str(self.crawlerID) + ': Updating webpage ' + link)
-                    with DB.atomic():
-                        while True:
-                            try:
-                                WebPages.update(pageContent=webContent).where(
-                                    WebPages.pageURL == returnedLink).execute()
+
+                    while True:
+                        try:
+                            WebPages.update(pageContent=webContent).where(
+                                WebPages.pageURL == returnedLink).execute()
+                            break
+                        except OperationalError as e:
+                            if 'binding' in str(e):
                                 break
-                            except OperationalError:
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                                pass
+                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            sleep(1)
+                            pass
+                        except:
+                            break
+
 
 
                 else:
                     print('Thread ' + str(self.crawlerID) + ': Saving webpage ' + link )
                     pass #peewee.IntegrityError: UNIQUE constraint failed: webpages.pageURL
                     try:
-                        with DB.atomic():
-                            while True:
-                                try:
-                                    WebPages(pageURL=returnedLink, pageContent=webContent).save()
+
+                        while True:
+                            try:
+                                WebPages(pageURL=returnedLink, pageContent=webContent).save()
+                                break
+                            except OperationalError as e:
+                                if 'binding' in str(e):
                                     break
-                                except OperationalError:
-                                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                                    pass
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                sleep(1)
+                                pass
+                            except:
+                                break
+
 
 
                     except:
@@ -292,15 +322,21 @@ class Crawler(threading.Thread):
                     pass
 
                 size = 999
-                with DB.atomic():
-                    while True:
-                        try:
-                            for i in range(0, len(parser.links), size):
-                                UncrawledTable.insert_many(parser.links[i:i + size]).upsert().execute()
+
+                while True:
+                    try:
+                        for i in range(0, len(parser.links), size):
+                            UncrawledTable.insert_many(parser.links[i:i + size]).upsert().execute()
+                        break
+                    except OperationalError as e:
+                        if 'binding' in str(e):
                             break
-                        except OperationalError:
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                            pass
+                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        sleep(1)
+                        pass
+                    except:
+                        break
+
 
 
 
@@ -327,14 +363,20 @@ class Crawler(threading.Thread):
                 robotContentFromInternet = ''
 
             rp.parse(robotContentFromInternet)
-            with DB.atomic():
-                while True:
-                    try:
-                        RobotTxts(netLoc=robotLocation, robotContent=robotContentFromInternet).save()
+
+            while True:
+                try:
+                    RobotTxts(netLoc=robotLocation, robotContent=robotContentFromInternet).save()
+                    break
+                except OperationalError as e:
+                    if 'binding' in str(e):
                         break
-                    except OperationalError:
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
-                        pass
+                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                    sleep(1)
+                    pass
+                except:
+                    break
+
 
 
 
