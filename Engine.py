@@ -24,7 +24,8 @@ class Engine:
         if not DB.get_tables():
             print("Creating Database...")
             DB.create_tables([IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
-            Seeds(pageURL='https://www.reddit.com', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
+            Seeds(pageURL='https://www.reddit.com/', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
+            Seeds(pageURL='https://www.newsvine.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
 
 
     def _setNumOfThreads(self):
@@ -35,7 +36,7 @@ class Engine:
 
 
     def _createCrawlerObjects(self):
-
+        Crawler.numberOfThreads = int(self.numberOfThreads)
         print('Creating ', self.numberOfThreads , ' crawler objects.')
         for i in range(int(self.numberOfThreads)):
             self.crawlerObjs.append(Crawler(i))
@@ -86,6 +87,9 @@ class Engine:
 
         for i in range(len(self.crawlerObjs)):
             self.crawlerObjs[i].join()
+        CrawledTable.delete().execute()
+        UncrawledTable.delete().execute()
+        RobotTxts.delete().execute()
         #index for the last time
         print("All crawling threads are done...")
         print("Indexing for the last time and terminating the Engine...")

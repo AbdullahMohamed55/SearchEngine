@@ -9,27 +9,36 @@ import urllib.robotparser
 from html.parser import HTMLParser
 
 
-NUMOFPAGES = 10000
+NUMOFPAGES = 10
 
 class Crawler(threading.Thread):
-
+    numberOfThreads = 0
+    webpagesSaved = 0
     dbLock = threading.Lock()
+    webpagesLock = threading.Lock()
+    linksLock = threading.Lock()
+    listOfLinks = []
+    assignedLock = threading.Lock()
+    assignedList = []
 
     def __init__(self, cID):
+        try:
+            threading.Thread.__init__(self)
+            self.crawlerID = cID
+            for seed in Seeds.select():
+                if UncrawledTable.select().where(UncrawledTable.uncrawledURL == seed.pageURL).exists():
+                    continue
 
-        threading.Thread.__init__(self)
-        self.crawlerID = cID
-        for seed in Seeds.select():
-            if UncrawledTable.select().where(UncrawledTable.uncrawledURL == seed.pageURL).exists():
-                continue
-            timeDifference = datetime.now() - seed.lastCrawl
-            timeDifferenceInHours = timeDifference.days * 24 + timeDifference.seconds // 3600
-            pass
-            #timeDifferenceInHours = 100
-            if timeDifferenceInHours >= seed.crawlFrequency:
-                print(UncrawledTable.get_or_create(uncrawledURL = seed.pageURL))
-                seed.lastCrawl = datetime.now()
-                seed.save()
+                timeDifference = datetime.now() - seed.lastCrawl
+                timeDifferenceInHours = timeDifference.days * 24 + timeDifference.seconds // 3600
+                pass
+                #timeDifferenceInHours = 100
+                if timeDifferenceInHours >= seed.crawlFrequency:
+                    UncrawledTable.get_or_create(uncrawledURL = seed.pageURL)
+                    seed.lastCrawl = datetime.now()
+                    seed.save()
+        except OperationalError:
+            print("Database already open by something")
 
 
     def run(self):
@@ -38,18 +47,21 @@ class Crawler(threading.Thread):
 
             while True:
                 try:
-                    ##
-                    locker = Crawler.dbLock.acquire()
-                    print(Crawler.dbLock)
-                    ###############################
-                    print('Thread ' + str(self.crawlerID) + ': Lock acquired, Getting link.')
-                    pass #TODO ?
-                    if WebPages.select().count() == NUMOFPAGES:
+
+                    print('Thread ' + str(self.crawlerID) + ': Getting link.')
+                    Crawler.webpagesLock.acquire()
+                    if Crawler.webpagesSaved >= NUMOFPAGES:
                         print('Thread ' + str(self.crawlerID) + ': Target reached, ending crawl')
+                        Crawler.webpagesLock.release()
                         break
-                    linkQuery = UncrawledTable.select().limit(1)
+                    Crawler.webpagesLock.release()
+
+
+
+                    linkQuery = UncrawledTable.select().limit(1) #just to check if table is empty #rawshana
                     if not linkQuery.exists():
-                        Crawler.dbLock.release()
+                        #if table is empty
+
                         if tryTwice == 2:
                             print('Thread ' + str(self.crawlerID) + ': No links available. Ending crawl.')
                             break
@@ -58,44 +70,131 @@ class Crawler(threading.Thread):
                         tryTwice = tryTwice + 1
                         continue
                     tryTwice = 0
-                    linkQuery = linkQuery.get()
-                    link = linkQuery.uncrawledURL
-                    pass #db lock exception
-                    linkQuery.delete_instance()
 
-                    if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
-                        print('Thread ' + str(self.crawlerID) + ': Link already visited.')
-                        Crawler.dbLock.release()
+                    link = self._getALink()
+                    ### i am here
+                    if link == 'ALLLINKSASSIGNED':
+                        #if table is empty
+
+                        print('Thread ' + str(self.crawlerID) + ': All links assigned.')
+                        sleep(1)
                         continue
 
-                    CrawledTable.create(crawledURL=link).update()
-                    #CrawledTable(crawledURL=link).insert().upsert()
-                    print("CRAWLED URLS = ", CrawledTable.select().count())
-                    print('Thread ' + str(self.crawlerID) + ': Done getting link, releasing lock.')
-                    ################################
-                    locker = Crawler.dbLock.release()
-                    ##
+                    if CrawledTable.select().where(CrawledTable.crawledURL == link).exists():
+                        print('Thread ' + str(self.crawlerID) + ': Link already visited.' + ' ' + link)
+
+                        Crawler.linksLock.acquire()
+                        Crawler.assignedLock.acquire()
+                        Crawler.assignedList.remove(link)
+                        try:
+                            Crawler.listOfLinks.remove(link)
+                        except:
+                            pass
+                        Crawler.assignedLock.release()
+                        Crawler.linksLock.release()
+                        with DB.atomic():
+                            while True:
+                                try:
+                                    UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+                                    break
+                                except OperationalError:
+                                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                    pass
+
+
+
+                        continue
+
+                    Crawler.webpagesLock.acquire()
+                    print("CRAWLED URLS = ", CrawledTable.select().count(), ' Thread ' + str(self.crawlerID))
+                    print("Actual pages = ", Crawler.webpagesSaved, ' Thread ' + str(self.crawlerID))
+                    Crawler.webpagesLock.release()
+                    print('Thread ' + str(self.crawlerID) + ': Done getting link.')
+
 
                     print('Thread ' + str(self.crawlerID) + ': Crawling link: ' + link)
                     self.crawl(link)
-                    print('Thread ' + str(self.crawlerID) + ': Done crawling link: ' + link)
+                    with DB.atomic():
+                        while True:
+                            try:
+                                UncrawledTable.delete().where(UncrawledTable.uncrawledURL == link).execute()
+                                break
+                            except OperationalError:
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                pass
 
+                    Crawler.linksLock.acquire()
+                    Crawler.assignedLock.acquire()
+                    Crawler.assignedList.remove(link)
+                    try:
+                        Crawler.listOfLinks.remove(link)
+                    except:
+                        pass
+                    Crawler.assignedLock.release()
+                    Crawler.linksLock.release()
+                    with DB.atomic():
+                        while True:
+                            try:
+                                CrawledTable.create(crawledURL=link).update()
+                                break
+                            except OperationalError:
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                pass
+
+
+                    print('Thread ' + str(self.crawlerID) + ': Done crawling link: ' + link)
+                # Just in case, but these 2 exceptions should never happen
                 except IntegrityError:
-                    pass #TODO ?
+
                     print("IntegrityError has occurred by thread " + str(self.crawlerID) + " !")
-                    pass
-                except OperationalError:
-                    pass  # TODO ?
-                    print("Database is locked while thread " + str(self.crawlerID) + " tried to access it!")
+
+                #except OperationalError:
+
+                   # print("Database is locked while thread " + str(self.crawlerID) + " tried to access it!")
 
 
             try: #TODO ??
-                CrawledTable.delete().execute()
-                UncrawledTable.delete().execute()
-                RobotTxts.delete().execute()
-                print("Exiting after deleting by thread: " , self.crawlerID)
+
+                print("Exiting thread: " , self.crawlerID)
             except:
-                print("Failed to delete all table entries by thread " + str(self.crawlerID))
+                print("Tables already empty" + str(self.crawlerID))
+
+    def _getALink(self):
+        Crawler.linksLock.acquire()
+        Crawler.assignedLock.acquire()
+        if len(Crawler.listOfLinks) == 0:
+            listOfLinksQuery = UncrawledTable.select().limit(Crawler.numberOfThreads)
+            for link in listOfLinksQuery:
+                Crawler.listOfLinks.append(link.uncrawledURL)
+        retVal = Crawler.listOfLinks.pop()
+
+
+        acquired = False
+        breaked = False
+        while True:
+            if retVal not in Crawler.assignedList:
+                break
+            if len(Crawler.listOfLinks) == 0:
+                if acquired == True:
+                    breaked = True
+                    break
+                acquired = True
+                listOfLinksQuery = UncrawledTable.select().limit(Crawler.numberOfThreads)
+                for link in listOfLinksQuery:
+                    Crawler.listOfLinks.append(link.uncrawledURL)
+            retVal = Crawler.listOfLinks.pop()
+
+
+
+        if breaked:
+            Crawler.assignedLock.release()
+            Crawler.linksLock.release()
+            return 'ALLLINKSASSIGNED'
+        else:
+            Crawler.assignedList.append(retVal)
+            Crawler.assignedLock.release()
+            Crawler.linksLock.release()
+            return retVal
 
 
     def crawl(self, link):
@@ -126,7 +225,7 @@ class Crawler(threading.Thread):
 
             returnedLink = response.geturl()
             if returnedLink != link:
-                print('Thread ' + str(self.crawlerID) + ': Redirection:' + link + ' returning.')
+                print('Thread ' + str(self.crawlerID) + ': Redirection:' + link + ' to ' + returnedLink + ' returning.')
                 return
 
             urlInfo = response.info()
@@ -135,29 +234,78 @@ class Crawler(threading.Thread):
                 print('Thread ' + str(self.crawlerID) + ': Not HTML ' + link + ' returning.')
                 return
 
-            pass #TODO http.client.IncompleteRead: IncompleteRead(166453 bytes read, 4709 more expected)
+
             try:
                 webContent = str(response.read())
             except:
                 print("Incomplete Read of web content due to a defective http server.")
                 webContent = None
 
-            pass
+
             if(webContent):
+                Crawler.webpagesLock.acquire()
+                if Crawler.webpagesSaved < NUMOFPAGES:
+                    Crawler.webpagesSaved += 1
+                else:
+                    print('Thread ' + str(self.crawlerID) + ': Page number limit reached ')
+                    Crawler.webpagesLock.release()
+                    return
+                Crawler.webpagesLock.release()
                 if WebPages.select().where(WebPages.pageURL == returnedLink).exists():
-                    WebPages.update(pageContent = webContent).where(WebPages.pageURL == returnedLink).execute()
+                    print('Thread ' + str(self.crawlerID) + ': Updating webpage ' + link)
+                    with DB.atomic():
+                        while True:
+                            try:
+                                WebPages.update(pageContent=webContent).where(
+                                    WebPages.pageURL == returnedLink).execute()
+                                break
+                            except OperationalError:
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                pass
+
+
                 else:
                     print('Thread ' + str(self.crawlerID) + ': Saving webpage ' + link )
                     pass #peewee.IntegrityError: UNIQUE constraint failed: webpages.pageURL
-                    WebPages(pageURL = returnedLink, pageContent = webContent).save()
+                    try:
+                        with DB.atomic():
+                            while True:
+                                try:
+                                    WebPages(pageURL=returnedLink, pageContent=webContent).save()
+                                    break
+                                except OperationalError:
+                                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                    pass
+
+
+                    except:
+                        print('Unexpected Exception in saving webpage WEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+
+
+
                 print('Thread ' + str(self.crawlerID) + ': Done saving webpage and starting link extraction ' + link)
-                parser = MyHTMLParser(link)
-                parser.feed(str(webContent))
+                try:
+                    parser = MyHTMLParser(link)
+                    parser.feed(str(webContent))
+                except:
+                    print('Unexpected Exception in parser WEEEEEEEEEEEEEEEEEEEEEEE')
+                    pass
+
+                size = 999
                 with DB.atomic():
-                    size = 999
-                    for i in range(0, len(parser.links), size):
-                        UncrawledTable.insert_many(parser.links[i:i+size]).upsert().execute()
-                print("UNCRAWLED URLS = ", UncrawledTable.select().count())
+                    while True:
+                        try:
+                            for i in range(0, len(parser.links), size):
+                                UncrawledTable.insert_many(parser.links[i:i + size]).upsert().execute()
+                            break
+                        except OperationalError:
+                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            pass
+
+
+
+
+                print("UNCRAWLED URLS = ", UncrawledTable.select().count(), ' Thread ' + str(self.crawlerID))
                 print('Thread ' + str(self.crawlerID) + ': Done inserting links ' + link)
 
 
@@ -179,7 +327,16 @@ class Crawler(threading.Thread):
                 robotContentFromInternet = ''
 
             rp.parse(robotContentFromInternet)
-            RobotTxts(netLoc = robotLocation, robotContent = robotContentFromInternet).save()
+            with DB.atomic():
+                while True:
+                    try:
+                        RobotTxts(netLoc=robotLocation, robotContent=robotContentFromInternet).save()
+                        break
+                    except OperationalError:
+                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        pass
+
+
 
         return rp
 
@@ -218,6 +375,9 @@ class MyHTMLParser(HTMLParser):
                         elif link.startswith('javascript'):
                             continue
                         parsedLink = urllib.parse.urlparse(link)
+                        '''this option lets us crawl deeper into the current host'''
+                        #link = urllib.parse.urljoin(parsedLink.scheme + '://' + parsedLink.netloc, parsedLink.path)
+                        '''this option only lets us crawl the main pages of the hosts'''
                         link = parsedLink.scheme + '://' + parsedLink.netloc
                         if link[-1] != '/':
                             link = link + '/'
