@@ -1,5 +1,4 @@
 from Model import *
-import re
 from bs4 import Comment
 from bs4 import BeautifulSoup
 from nltk.stem.porter import *
@@ -22,9 +21,9 @@ class Indexer:
 
         #insert page extracted words in a list for bulk db insertions
         for word in wordImportance:
-            pass
+
             ##avoiding alphaNum words...
-            if (word in wordIndexes and not re.search('\d+',word) and not word.startswith('x')):
+            if word in wordIndexes and not re.search('\d+',word):
                 bulkEntries.append({'keyword' : word ,'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
 
         if(bulkEntries):
@@ -157,10 +156,10 @@ class Indexer:
         texts = soup.find_all(text=True)
 
         # ---------------removing the unwanted script and links from the doc and returning list of words------------
-        visible_texts = filter(self._visibleText, texts)
+        visibleTexts = filter(self._visibleText, texts)
 
         # ---------------remove all symbols like #$%@ , spaces and newlines--------------
-        parsedWords = self._parseKeywords(list(visible_texts))
+        parsedWords = self._parseKeywords(list(visibleTexts))
         parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
         # remove stop words
         parsedWords = self._removeStopWords(parsedWords)
@@ -195,5 +194,6 @@ class Indexer:
 
         # --------------indexing words -------------
         indexMap = self._indexFile(plainText)
+
 
         return indexMap,importMap
