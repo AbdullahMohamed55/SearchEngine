@@ -1,4 +1,6 @@
 import timeit
+import sqlite3
+from time import sleep
 from Model import *
 from datetime import *
 from Crawler import Crawler
@@ -48,32 +50,47 @@ class Engine:
         for i in range(len(self.crawlerObjs)):
             self.crawlerObjs[i].start()
 
+        tryFor = 1000000 #trials for indexer if WebPages table is found empty
+        sleepFor = 60 #secs
+
+        while(tryFor != 0):
+            print("INDEXER: Indexer will try to index after %d seconds." % sleepFor)
+            sleep(sleepFor)  # give time for crawling threads to add new urls
+            self._indexCrawledPages()
+            tryFor -= 1
+            print("INDEXER: %d Trials left for indexer." % tryFor)
         return
 
     '''Indexes newly crawled web pages'''
     def _indexCrawledPages(self):
 
-        print("Indexing started...")
+        print("INDEXER: Indexing started...")
         start = timeit.default_timer()
         count = 0
-        try:
-            print("WebPages table entries: ", WebPages.select().count())
-            print("Crawled table entries: ", CrawledTable.select().count())
-            print("Uncrawled table entries: ", UncrawledTable.select().count())
+        while True:
+            try:
+                print("INDEXER: %d found web pages for indexing..." % WebPages.select().count())
+                #print("Crawled table entries: ", CrawledTable.select().count())
+                #print("Uncrawled table entries: ", UncrawledTable.select().count())
 
-            for page in WebPages.select():
+                for page in WebPages.select():
 
-                count += 1
-                self.indexer.update(str(page.pageURL), str(page.pageContent))
-                # delete indexed page from WebPages table
-                page.delete_instance()
+                    self.indexer.update(str(page.pageURL), str(page.pageContent))
+                    # delete indexed page from WebPages table
+                    page.delete_instance()
+                    count += 1
+                #WebPages is empty
+                break
 
-        except:
-            print("DB Error: Couldn't index all pages!")
-
+            except (OperationalError, sqlite3.OperationalError) as e:
+                if 'binding' in str(e):
+                    break
+                print("INDEXER: DB Busy: Indexer is Retrying...'")
+            except:
+                break
 
         stop = timeit.default_timer()
-        print("TOOK :: %.2f mins for indexing %d newly crawled web pages." % ((stop - start) / 60., count))
+        print("INDEXER: TOOK :: %.2f mins for indexing %d newly crawled web pages." % ((stop - start) / 60., count))
 
 
     def end(self):
@@ -82,7 +99,7 @@ class Engine:
             self.crawlerObjs[i].join()
         print("All crawling threads are done...")
 
-        #indexing for the last time
+        print("Indexing for the last time")
         self._indexCrawledPages()
         print("Emptying all tables and Terminating Engine...")
         try:
