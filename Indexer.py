@@ -26,7 +26,7 @@ class Indexer:
         for word in wordImportance:
 
             ##avoiding alphaNum words...
-            if word in wordIndexes and not re.search('\d+',word):
+            if word in wordIndexes: #and not re.search('\d+',word):
                 stemmed  = stemmer.stem(word)
                 bulkEntries.append({'keyword' : word ,'stem': stemmed, 'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
 
