@@ -1,6 +1,7 @@
 from peewee import *
 
 DB = SqliteDatabase("SearchEngine.db", threadlocals=True)
+#DB2 = SqliteDatabase("SearchEngine2.db", threadlocals=True)
 
 ''''---------------------------------------------CRAWLER Stuff-------------------------------------------------------'''
 
@@ -33,6 +34,10 @@ class Seeds(BaseModel):
     crawlFrequency = IntegerField()
     lastCrawl = DateTimeField()
 
+''''---------------------------------------------Page InLinks Stuff-------------------------------------------------------'''
+class PageRank(BaseModel):
+    pageURL = CharField(unique=True)
+    pageInLinks = IntegerField(default = 2)
 
 ''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
 

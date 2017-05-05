@@ -10,7 +10,7 @@ import urllib.robotparser
 from html.parser import HTMLParser
 
 #Number of pages to crawl for per run.
-NUMOFPAGES = 10000
+NUMOFPAGES = 1000000
 
 class Crawler(threading.Thread):
 
@@ -108,6 +108,26 @@ class Crawler(threading.Thread):
 
                     if x: #if link already exists in CrawledTable
                         print('Thread ' + str(self.crawlerID) + ': Link already visited.' + ' ' + link)
+
+
+                        #increment this page rank
+                        while True:
+                            try:
+                                selectQuery = PageRank.select().where(PageRank.pageURL == link)
+                                if (selectQuery.exists()):
+                                    PageRank.update(pageInLinks = PageRank.pageInLinks + 1).where(
+                                        PageRank.pageURL == link).execute()
+                                else: #insert
+                                    PageRank.create(pageURL = link).update()
+
+                                break
+                            except (OperationalError, sqlite3.OperationalError) as e:
+                                if 'binding' in str(e):
+                                    break
+                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            except:
+                                break
+
 
                         Crawler.linksLock.acquire()
                         Crawler.assignedLock.acquire()
@@ -431,7 +451,6 @@ class Crawler(threading.Thread):
                     robotData = robotQuery.get()
                 break
             except (OperationalError, sqlite3.OperationalError) as e:
-                print('Thread ', self.crawlerID, ': Database busy, retrying.')
                 if 'binding' in str(e):
                     break
                 print('Thread ', self.crawlerID, ': Database busy, retrying.')

@@ -24,8 +24,8 @@ class Engine:
 
         if not DB.get_tables():
             print("Creating Database...")
-            DB.create_tables([IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
-            Seeds(pageURL='https://www.reddit.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
+            DB.create_tables([PageRank, IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
+            #Seeds(pageURL='https://www.reddit.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
             Seeds(pageURL='https://twitter.com/', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
             #Seeds(pageURL='https://www.newsvine.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
 
