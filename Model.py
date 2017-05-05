@@ -69,6 +69,7 @@ class PositionsField(CharField):
 class IndexerTable(Model):
 
     keyword = CharField()
+    stem = CharField()
     url = CharField()
     positions = PositionsField(default = [])
     importance = IntegerField() # 0-> title , 1-> header, 2->plain text

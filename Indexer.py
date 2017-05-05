@@ -16,6 +16,9 @@ class Indexer:
         self._deleteOldEntries(url)
         bulkEntries = []
 
+        #Stemmer
+        stemmer = PorterStemmer()
+
         #parse the web page content
         wordIndexes, wordImportance = self.parser(content)
 
@@ -24,7 +27,8 @@ class Indexer:
 
             ##avoiding alphaNum words...
             if word in wordIndexes and not re.search('\d+',word):
-                bulkEntries.append({'keyword' : word ,'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
+                stemmed  = stemmer.stem(word)
+                bulkEntries.append({'keyword' : word ,'stem': stemmed, 'url': url, 'positions' : wordIndexes[word], 'importance':wordImportance[word]})
 
         if(bulkEntries):
             #insert new entries in IndexerTable...Fastest way!
