@@ -11,7 +11,8 @@ class Engine:
 
     def __init__(self):
 
-        DB.connect()
+        DBCrawl.connect()
+        DBSearch.connect()
         self._getDBTables()
         self.indexer = Indexer()
         self.numberOfThreads = 1
@@ -22,12 +23,15 @@ class Engine:
 
     def _getDBTables(self):
 
-        if not DB.get_tables():
-            print("Creating Database...")
-            DB.create_tables([PageRank, IndexerTable, UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
+        if not DBCrawl.get_tables():
+            print("Creating Crawl Database...")
+            DBCrawl.create_tables([UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
             #Seeds(pageURL='https://www.reddit.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
             Seeds(pageURL='https://twitter.com/', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
             #Seeds(pageURL='https://www.newsvine.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
+        if not DBSearch.get_tables():
+            print("Creating Search Database...")
+            DBSearch.create_tables([PageRank, IndexerTable])
 
 
     def _setNumOfThreads(self):
@@ -110,6 +114,7 @@ class Engine:
             print("DB Error: Couldn't delete all tables!")
 
         #close db
-        DB.close()
+        DBCrawl.close()
+        DBSearch.close()
 
         return

@@ -32,7 +32,7 @@ class Indexer:
 
         if(bulkEntries):
             #insert new entries in IndexerTable...Fastest way!
-            with DB.atomic():
+            with DBSearch.atomic():
                 #sqlite max vars = 999 per bulk insertion
                 size = (999 // len(bulkEntries[0]))
                 for i in range(0, len(bulkEntries), size):

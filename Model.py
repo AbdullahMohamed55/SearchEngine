@@ -1,13 +1,13 @@
 from peewee import *
 
-DB = SqliteDatabase("SearchEngine.db", threadlocals=True)
-#DB2 = SqliteDatabase("SearchEngine2.db", threadlocals=True)
+DBCrawl = SqliteDatabase("EngineCrawl.db", threadlocals=True)
+DBSearch = SqliteDatabase("EngineSearch.db", threadlocals=True)
 
 ''''---------------------------------------------CRAWLER Stuff-------------------------------------------------------'''
 
 class BaseModel(Model):
     class Meta:
-        database = DB
+        database = DBCrawl
 
 
 class CrawledTable(BaseModel):
@@ -35,9 +35,12 @@ class Seeds(BaseModel):
     lastCrawl = DateTimeField()
 
 ''''---------------------------------------------Page InLinks Stuff-------------------------------------------------------'''
-class PageRank(BaseModel):
+class PageRank(Model):
     pageURL = CharField(unique=True)
     pageInLinks = IntegerField(default = 2)
+
+    class Meta:
+        database = DBSearch
 
 ''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
 
@@ -75,5 +78,5 @@ class IndexerTable(Model):
     importance = IntegerField() # 0-> title , 1-> header, 2->plain text
 
     class Meta:
-        database = DB
+        database = DBSearch
         primary_key = CompositeKey('keyword', 'url')
