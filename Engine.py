@@ -31,7 +31,7 @@ class Engine:
             #Seeds(pageURL='https://www.newsvine.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
         if not DBSearch.get_tables():
             print("Creating Search Database...")
-            DBSearch.create_tables([PageRank, IndexerTable])
+            DBSearch.create_tables([QuerySuggestion, PageRank, IndexerTable])
 
 
     def _setNumOfThreads(self):

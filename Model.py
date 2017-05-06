@@ -37,7 +37,16 @@ class Seeds(BaseModel):
 ''''---------------------------------------------Page InLinks Stuff-------------------------------------------------------'''
 class PageRank(Model):
     pageURL = CharField(unique=True)
-    pageInLinks = IntegerField(default = 2)
+    pageInLinks = IntegerField(default = 1)
+
+    class Meta:
+        database = DBSearch
+
+''''---------------------------------------------Search Suggestions Stuff-------------------------------------------------------'''
+class QuerySuggestion(Model):
+    keyword = CharField(unique=True)
+    stem = CharField()
+    count = IntegerField(default = 1)
 
     class Meta:
         database = DBSearch
