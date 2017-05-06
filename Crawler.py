@@ -117,8 +117,6 @@ class Crawler(threading.Thread):
                                 if (selectQuery.exists()):
                                     PageRank.update(pageInLinks = PageRank.pageInLinks + 1).where(
                                         PageRank.pageURL == link).execute()
-                                else: #insert
-                                    PageRank.create(pageURL = link).update()
 
                                 break
                             except (OperationalError, sqlite3.OperationalError) as e:
@@ -329,6 +327,7 @@ class Crawler(threading.Thread):
                 # for handling any other url errors
                 except:
                     print('Error opening link: ',link, " by thread : ", self.crawlerID)
+
                     return
 
             returnedLink = response.geturl()
@@ -391,6 +390,9 @@ class Crawler(threading.Thread):
                         while True:
                             try:
                                 WebPages(pageURL=returnedLink, pageContent=webContent).save()
+                                ...
+                                PageRank.create(pageURL=returnedLink).update()
+                                ...
                                 break
                             except (OperationalError, sqlite3.OperationalError) as e:
                                 if 'binding' in str(e):
