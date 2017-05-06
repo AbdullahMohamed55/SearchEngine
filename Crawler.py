@@ -386,10 +386,12 @@ class Crawler(threading.Thread):
                 else:
                     print('Thread ' + str(self.crawlerID) + ': Saving webpage ' + link )
                     try:
-
+                        inserted = False
                         while True:
                             try:
-                                WebPages(pageURL=returnedLink, pageContent=webContent).save()
+                                if not inserted:
+                                    WebPages(pageURL=returnedLink, pageContent=webContent).save()
+                                    inserted =  True
                                 ...
                                 PageRank.create(pageURL=returnedLink).update()
                                 ...
