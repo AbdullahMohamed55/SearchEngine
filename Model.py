@@ -1,38 +1,54 @@
 from peewee import *
 
-DBCrawl = SqliteDatabase("EngineCrawl.db", threadlocals=True)
-DBSearch = SqliteDatabase("EngineSearch.db", threadlocals=True)
+DBCrawl = SqliteDatabase("CrawlTable.db", threadlocals=True)
+DBUnCrawl = SqliteDatabase("UnCrawlTable.db", threadlocals=True)
+DBRobot = SqliteDatabase("RobotTable.db", threadlocals=True)
+DBWebPage = SqliteDatabase("WebPageTable.db", threadlocals=True)
+DBPageRank = SqliteDatabase("PageRankTable.db", threadlocals=True)
+DBIndexer = SqliteDatabase("IndexerTable.db", threadlocals=True)
+DBQuery = SqliteDatabase("QueryTable.db", threadlocals=True)
+indexedCount = SqliteDatabase("indexedCount.db", threadlocals=True)
 
 ''''---------------------------------------------CRAWLER Stuff-------------------------------------------------------'''
 
-class BaseModel(Model):
-    class Meta:
-        database = DBCrawl
-
-
-class CrawledTable(BaseModel):
+class CrawledTable(Model):
 
     crawledURL = CharField(unique =True)
 
-class UncrawledTable(BaseModel):
+    class Meta:
+        database = DBCrawl
+
+class UncrawledTable(Model):
 
     uncrawledURL = CharField(unique = True)
 
-class RobotTxts(BaseModel):
+    class Meta:
+        database = DBUnCrawl
+
+class RobotTxts(Model):
 
     netLoc = CharField(unique=True)
     robotContent = TextField()
 
-class WebPages(BaseModel):
+    class Meta:
+        database = DBRobot
+
+class WebPages(Model):
 
     pageURL = CharField(unique=True)
     pageContent = TextField()
 
-class Seeds(BaseModel):
+    class Meta:
+        database = DBWebPage
+
+class Seeds(Model):
 
     pageURL = CharField(unique=True)
     crawlFrequency = IntegerField()
     lastCrawl = DateTimeField()
+
+    class Meta:
+        database = DBCrawl
 
 ''''---------------------------------------------Page InLinks Stuff-------------------------------------------------------'''
 class PageRank(Model):
@@ -40,7 +56,7 @@ class PageRank(Model):
     pageInLinks = IntegerField(default = 1)
 
     class Meta:
-        database = DBSearch
+        database = DBPageRank
 
 ''''---------------------------------------------Search Suggestions Stuff-------------------------------------------------------'''
 class QuerySuggestion(Model):
@@ -49,9 +65,14 @@ class QuerySuggestion(Model):
     count = IntegerField(default = 1)
 
     class Meta:
-        database = DBSearch
+        database = DBQuery
 
 ''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
+class IndexedCount(Model):
+    indexedURLs= IntegerField(default=0)
+
+    class Meta:
+        database = indexedCount
 
 class PositionsField(CharField):
 
@@ -87,5 +108,5 @@ class IndexerTable(Model):
     importance = IntegerField() # 0-> title , 1-> header, 2->plain text
 
     class Meta:
-        database = DBSearch
+        database = DBIndexer
         primary_key = CompositeKey('keyword', 'url')

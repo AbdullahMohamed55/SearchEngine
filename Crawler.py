@@ -5,6 +5,7 @@ import urllib.parse
 import urllib.request
 from datetime import *
 from time import sleep
+from random import randint
 import urllib.response
 import urllib.robotparser
 from html.parser import HTMLParser
@@ -69,7 +70,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError) as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. UNCrawledTable')
                         except:
                             break
 
@@ -102,7 +103,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError) as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. CrawledTable')
                         except:
                             break
 
@@ -122,7 +123,7 @@ class Crawler(threading.Thread):
                             except (OperationalError, sqlite3.OperationalError) as e:
                                 if 'binding' in str(e):
                                     break
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                print('Thread ', self.crawlerID, ': Database busy, retrying. PageRankTable')
                             except:
                                 break
 
@@ -144,7 +145,7 @@ class Crawler(threading.Thread):
                             except (OperationalError, sqlite3.OperationalError) as e:
                                 if 'binding' in str(e):
                                     break
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                print('Thread ', self.crawlerID, ': Database busy, retrying. Del UnCrawled Table')
                             except:
                                 break
 
@@ -159,7 +160,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError)as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. print CrawledTable')
                         except:
                             break
 
@@ -178,7 +179,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError) as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. del UnCrawledTable')
                             sleep(1)
                             pass
                         except:
@@ -201,7 +202,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError) as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. CrawledTable')
                             sleep(1)
                             pass
                         except:
@@ -232,7 +233,7 @@ class Crawler(threading.Thread):
                 except (OperationalError, sqlite3.OperationalError) as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying. UnCrawledTable')
                 except:
                     break
 
@@ -244,7 +245,7 @@ class Crawler(threading.Thread):
                 except (OperationalError, sqlite3.OperationalError) as e:
                     if 'binding' in str(e):
                         break
-                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                    print('Thread ', self.crawlerID, ': Database busy, retrying. UnCrawledTable')
                 except:
                     break
 
@@ -272,7 +273,7 @@ class Crawler(threading.Thread):
                     except (OperationalError, sqlite3.OperationalError)as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying.UnCrawledTable')
                     except:
                         break
 
@@ -284,7 +285,7 @@ class Crawler(threading.Thread):
                     except (OperationalError, sqlite3.OperationalError) as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying. UnCrawledTable')
                     except:
                         break
 
@@ -364,7 +365,7 @@ class Crawler(threading.Thread):
                     except (OperationalError , sqlite3.OperationalError) as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying. WebPagesTable')
                     except:
                         break
 
@@ -379,7 +380,7 @@ class Crawler(threading.Thread):
                         except (OperationalError, sqlite3.OperationalError) as e:
                             if 'binding' in str(e):
                                 break
-                            print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                            print('Thread ', self.crawlerID, ': Database busy, retrying. WebPagesTable')
                         except:
                             break
 
@@ -399,7 +400,9 @@ class Crawler(threading.Thread):
                             except (OperationalError, sqlite3.OperationalError) as e:
                                 if 'binding' in str(e):
                                     break
-                                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                                print('Thread ', self.crawlerID, ': Database busy, retrying. WebPagesTable & PageRank')
+                                sleep(randint(1,5))
+
                             except:
                                 break
                     #should never happen
@@ -423,7 +426,7 @@ class Crawler(threading.Thread):
                     except (OperationalError, sqlite3.OperationalError) as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying. UnCrawledTable')
                     except:
                         break
 
@@ -434,7 +437,7 @@ class Crawler(threading.Thread):
                     except (OperationalError, sqlite3.OperationalError) as e:
                         if 'binding' in str(e):
                             break
-                        print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                        print('Thread ', self.crawlerID, ': Database busy, retrying. print UnCrawledTable')
                     except:
                         break
 
@@ -457,7 +460,7 @@ class Crawler(threading.Thread):
             except (OperationalError, sqlite3.OperationalError) as e:
                 if 'binding' in str(e):
                     break
-                print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                print('Thread ', self.crawlerID, ': Database busy, retrying. RobotTable')
             except:
                 break
 
@@ -478,7 +481,7 @@ class Crawler(threading.Thread):
                 except (OperationalError, sqlite3.OperationalError) as e:
                     if 'binding' in str(e):
                         break
-                    print('Thread ', self.crawlerID, ': Database busy, retrying.')
+                    print('Thread ', self.crawlerID, ': Database busy, retrying. RobotTable')
                     sleep(1)
                     pass
                 except:

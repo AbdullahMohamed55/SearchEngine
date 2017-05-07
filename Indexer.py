@@ -1,4 +1,5 @@
 from Model import *
+import sqlite3
 from bs4 import Comment
 from bs4 import BeautifulSoup
 from nltk.stem.porter import *
@@ -32,11 +33,21 @@ class Indexer:
 
         if(bulkEntries):
             #insert new entries in IndexerTable...Fastest way!
-            with DBSearch.atomic():
+            with DBIndexer.atomic():
                 #sqlite max vars = 999 per bulk insertion
                 size = (999 // len(bulkEntries[0]))
                 for i in range(0, len(bulkEntries), size):
-                    IndexerTable.insert_many(bulkEntries[i:i + size]).upsert().execute()
+                    while True:
+                        try:
+                            IndexerTable.insert_many(bulkEntries[i:i + size]).upsert().execute()
+                            break
+
+                        except (OperationalError, sqlite3.OperationalError) as e:
+                            if 'binding' in str(e):
+                                break
+                            print('INDEXER: Database busy, retrying. bulk Insertions')
+                        except:
+                            break
             print("Inserted:",len(bulkEntries),"new entries for url:",url)
 
 

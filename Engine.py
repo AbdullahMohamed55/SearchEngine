@@ -1,9 +1,10 @@
 import timeit
 import sqlite3
 from time import sleep
+from random import randint
 from Model import *
 from datetime import *
-from Crawler import Crawler
+from Crawler import Crawler, NUMOFPAGES
 from Indexer import Indexer
 
 
@@ -12,7 +13,14 @@ class Engine:
     def __init__(self):
 
         DBCrawl.connect()
-        DBSearch.connect()
+        DBUnCrawl.connect()
+        DBRobot.connect()
+        DBWebPage.connect()
+        DBPageRank.connect()
+        DBIndexer.connect()
+        indexedCount.connect()
+        #DBQuery.connect()
+
         self._getDBTables()
         self.indexer = Indexer()
         self.numberOfThreads = 1
@@ -25,13 +33,33 @@ class Engine:
 
         if not DBCrawl.get_tables():
             print("Creating Crawl Database...")
-            DBCrawl.create_tables([UncrawledTable, CrawledTable, RobotTxts, WebPages, Seeds])
+            DBCrawl.create_tables([CrawledTable, Seeds])
             #Seeds(pageURL='https://www.reddit.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
             Seeds(pageURL='https://twitter.com/', crawlFrequency=1, lastCrawl= datetime(1960, 1, 1, 1, 1, 1)).save()
             #Seeds(pageURL='https://www.newsvine.com/', crawlFrequency=1, lastCrawl=datetime(1960, 1, 1, 1, 1, 1)).save()
-        if not DBSearch.get_tables():
-            print("Creating Search Database...")
-            DBSearch.create_tables([QuerySuggestion, PageRank, IndexerTable])
+        if not DBUnCrawl.get_tables():
+            print("Creating UnCrawl Database...")
+            DBUnCrawl.create_tables([UncrawledTable])
+        if not DBRobot.get_tables():
+            print("Creating Robot Database...")
+            DBRobot.create_tables([RobotTxts])
+        if not DBWebPage.get_tables():
+            print("Creating WebPage Database...")
+            DBWebPage.create_tables([WebPages])
+        if not DBPageRank.get_tables():
+            print("Creating PageRank Database...")
+            DBPageRank.create_tables([PageRank])
+        if not DBIndexer.get_tables():
+            print("Creating Indexer Database...")
+            DBIndexer.create_tables([IndexerTable])
+        if not indexedCount.get_tables():
+            print("Creating indexedCount var...")
+            indexedCount.create_tables([IndexedCount])
+            IndexedCount.insert().execute()
+        #if not DBQuery.get_tables():
+        #    print("Creating Query Database...")
+        #    DBQuery.create_tables([QuerySuggestion])
+
 
 
     def _setNumOfThreads(self):
@@ -54,9 +82,14 @@ class Engine:
         for i in range(len(self.crawlerObjs)):
             self.crawlerObjs[i].start()
 
-        tryFor = 1000000 #trials for indexer if WebPages table is found empty
-        sleepFor = 60 #secs
+        tryFor = NUMOFPAGES #trials for indexer if WebPages table is found empty
+        sleepFor = 20 #secs
 
+        temp = IndexedCount.select().where(IndexedCount.id == 1)
+        for x in temp:
+            self.indexed = x.indexedURLs
+
+        print(self.indexed)
         while(tryFor != 0):
             print("INDEXER: Indexer will try to index after %d seconds." % sleepFor)
             sleep(sleepFor)  # give time for crawling threads to add new urls
@@ -70,31 +103,46 @@ class Engine:
 
         print("INDEXER: Indexing started...")
         start = timeit.default_timer()
-        count = 0
+        #count = 0
         while True:
             try:
-                print("INDEXER: %d found web pages for indexing..." % WebPages.select().count())
+                print("INDEXER: %d found web pages for indexing..." % (WebPages.select().count() - self.indexed))
                 #print("Crawled table entries: ", CrawledTable.select().count())
                 #print("Uncrawled table entries: ", UncrawledTable.select().count())
-
-                for page in WebPages.select():
+                selector =  WebPages.select().where(WebPages.id > self.indexed)
+                for page in selector:
 
                     self.indexer.update(str(page.pageURL), str(page.pageContent))
-                    # delete indexed page from WebPages table
-                    page.delete_instance()
-                    count += 1
+                    self.indexed += 1
+                    sleep(randint(1,5))
+                    if(self.indexed % 100 == 0):
+                        while True:
+                            try:
+                                # delete indexed page from WebPages table
+                                dell =WebPages.delete().where(WebPages.id <= self.indexed)
+                                dell.execute()
+                                print("INDEXER: Deleted old entries from WebPages table")
+                                break
+                            except (OperationalError, sqlite3.OperationalError) as e:
+                                if 'binding' in str(e):
+                                    break
+                                print('INDEXER: Database busy, retrying. WebPage delete')
+                                sleep(randint(1,10))
+                            except:
+                                break
                 #WebPages is empty
+                IndexedCount.update(indexedURLs=self.indexed).where(IndexedCount.id == 1).execute()
                 break
-
             except (OperationalError, sqlite3.OperationalError) as e:
                 if 'binding' in str(e):
                     break
                 print("INDEXER: DB Busy: Indexer is Retrying...'")
+                sleep(randint(1, 10))
             except:
                 break
 
         stop = timeit.default_timer()
-        print("INDEXER: TOOK :: %.2f mins for indexing %d newly crawled web pages." % ((stop - start) / 60., count))
+        print("INDEXER: TOOK :: %.2f mins, %d indexed web pages." % ((stop - start) / 60., self.indexed))
 
 
     def end(self):
@@ -115,6 +163,11 @@ class Engine:
 
         #close db
         DBCrawl.close()
-        DBSearch.close()
+        DBUnCrawl.close()
+        DBWebPage.close()
+        DBRobot.close()
+        DBIndexer.close()
+        DBPageRank.close()
+        indexedCount.close()
 
         return
