@@ -92,9 +92,9 @@ class PositionsField(CharField):
     '''convert data type from database to python '''
     def python_value(self, value):
 
-        result = []
-        for i in range(0,len(value),2):
-            result.append(int(value[i]))
+        result = value.split(',')
+        result = list(map(int,result))
+        #print(result)
 
         return result
 
