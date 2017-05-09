@@ -56,6 +56,9 @@ class Engine:
             print("Creating indexedCount var...")
             indexedCount.create_tables([IndexedCount])
             IndexedCount.insert().execute()
+        if not DBPhrase.get_tables():
+            print("Creating PhraseSearch Database...")
+            DBPhrase.create_tables([FullPages])
         #if not DBQuery.get_tables():
         #    print("Creating Query Database...")
         #    DBQuery.create_tables([QuerySuggestion])
@@ -106,7 +109,7 @@ class Engine:
         #count = 0
         while True:
             try:
-                print("INDEXER: %d found web pages for indexing..." % (WebPages.select().count() - self.indexed))
+                print("INDEXER: %d found web pages for indexing..." % (abs(WebPages.select().count() - self.indexed)))
                 #print("Crawled table entries: ", CrawledTable.select().count())
                 #print("Uncrawled table entries: ", UncrawledTable.select().count())
                 selector =  WebPages.select().where(WebPages.id > self.indexed)

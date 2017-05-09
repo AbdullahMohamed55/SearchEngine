@@ -8,6 +8,7 @@ DBPageRank = SqliteDatabase("PageRankTable.db", threadlocals=True)
 DBIndexer = SqliteDatabase("IndexerTable.db", threadlocals=True)
 DBQuery = SqliteDatabase("QueryTable.db", threadlocals=True)
 indexedCount = SqliteDatabase("indexedCount.db", threadlocals=True)
+DBPhrase = SqliteDatabase("FullPagesTable.db", threadlocals=True)
 
 ''''---------------------------------------------CRAWLER Stuff-------------------------------------------------------'''
 
@@ -60,13 +61,20 @@ class PageRank(Model):
 
 ''''---------------------------------------------Search Suggestions Stuff-------------------------------------------------------'''
 class QuerySuggestion(Model):
-    keyword = CharField(unique=True)
-    stem = CharField()
+    keyword = TextField(unique=True)
+    stem = TextField()
     count = IntegerField(default = 1)
 
     class Meta:
         database = DBQuery
+''''---------------------------------------------Phrase Search Stuff-------------------------------------------------------'''
+class FullPages(Model):
 
+    pageURL = CharField(unique=True)
+    pageContent = TextField()
+
+    class Meta:
+        database = DBPhrase
 ''''---------------------------------------------INDEXER Stuff-------------------------------------------------------'''
 class IndexedCount(Model):
     indexedURLs= IntegerField(default=0)

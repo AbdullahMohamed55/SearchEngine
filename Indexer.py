@@ -15,6 +15,11 @@ class Indexer:
 
         #delete old entries of this url (if exists any)
         self._deleteOldEntries(url)
+
+        # for phrase search
+        document = self.phraseParser(content)
+        self.addToFullPages(document, url)
+
         bulkEntries = []
 
         #Stemmer
@@ -50,10 +55,24 @@ class Indexer:
                             break
             print("Inserted:",len(bulkEntries),"new entries for url:",url)
 
+    def addToFullPages(self,content,url):
+
+        while True:
+            try:
+                FullPages.create(pageURL=url, pageContent=content).update()
+                break
+            except (OperationalError, sqlite3.OperationalError) as e:
+                if 'binding' in str(e):
+                    break
+                print('INDEXER: Database busy, retrying. FullPages Insertion')
+            except:
+                break
 
     def _deleteOldEntries(self,url):
 
         query = IndexerTable.delete().where(IndexerTable.url == url)
+        pquery = FullPages.delete().where(FullPages.pageURL == url)
+        pquery.execute()
         print("Deleted:", query.execute(), "old entries for url:",url)
 
 
@@ -212,3 +231,24 @@ class Indexer:
 
 
         return indexMap,importMap
+
+    def phraseParser(self,text):
+
+        soup = BeautifulSoup(text, 'html.parser')
+
+        # ---------------Finding Comments to remove them---------------
+        comments = soup.findAll(text=lambda text: isinstance(text, Comment))
+        [comment.extract() for comment in comments]
+
+        # ---------------Getting Text without Comments-------------------
+        texts = soup.find_all(text=True)
+
+        # ---------------removing the unwanted script and links from the doc and returning list of words------------
+        visibleTexts = filter(self._visibleText, texts)
+
+        # ---------------remove all symbols like #$%@ , spaces and newlines--------------
+        parsedWords = self._parseKeywords(list(visibleTexts))
+        parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
+        space = ' '
+        document = space.join(parsedWords)
+        return document
