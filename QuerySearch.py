@@ -96,7 +96,7 @@ class QuerySearch:
         pattern = re.compile(r'[\W_]+')
         query2 = pattern.sub(' ', query1).lower()
         #print(query)
-        queryStr = query2
+        queryStr = query2.strip()
         #print(queryStr)
         #rm stop words for text search
         queryList = self._removeStopWords(query.split())
@@ -339,7 +339,7 @@ def inputCleanUp(input):
     cleanUp = re.compile(r'[\W_]+')
     ans = cleanUp.sub(' ', one).lower()
     #print(ans)
-    return ans
+    return ans.strip()
 
 def sporterStemmer(content):
     return PorterStemmer().stem(content)
@@ -380,7 +380,7 @@ def engineSearch(query):
 
 
 '''..................on typing.....................................'''
-typed = 'hel'
+typed = 'hel$%#$#$'
 print(getSuggestion(typed))
 
 '''..................on request...................................'''
