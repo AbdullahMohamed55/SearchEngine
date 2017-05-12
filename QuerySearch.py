@@ -68,7 +68,7 @@ class QuerySearch:
             print(mainResult)
             compResult = self._sortAndSave(self.rankPhraseResults.items(),'1')
             if (compResult):
-                print("About %d  related results:" % len(compResult))
+                print("About %d related results:" % len(compResult))
                 print(compResult)
             return mainResult, compResult
 
@@ -89,18 +89,18 @@ class QuerySearch:
     '''sets all query related variables for searching'''
     def queryProcessor(self, query):
 
-        query1 = str(query).strip()
+        one = str(query).strip()
         # phrase if "text"
-        phraseQuery = re.findall('"([^"]*)"', query1)
+        phraseQuery = re.findall('"([^"]*)"', one)
+        print(phraseQuery)
         isPhrase = True if phraseQuery else False
+
         pattern = re.compile(r'[\W_]+')
-        query2 = pattern.sub(' ', query1).lower()
-        #print(query)
-        queryStr = query2.strip()
+        queryStr = pattern.sub(' ', one).lower().strip()
         #print(queryStr)
         #rm stop words for text search
-        queryList = self._removeStopWords(query.split())
-
+        queryList = self._removeStopWords(queryStr.split())
+        #print(queryList)
         #size validation
         trimmedSearch = False
         if (len(queryList) > WORDLIMIT):
@@ -108,9 +108,9 @@ class QuerySearch:
             trimmedSearch = True
 
         stemmedQuery = self._porterStemmer(queryList)
-
-        phraseQuery = pattern.sub(' ', str(phraseQuery)).lower()
-
+        #print(phraseQuery)
+        phraseQuery = pattern.sub(' ', str(phraseQuery)).lower().strip()
+        #print(phraseQuery)
         return queryList, stemmedQuery, isPhrase, phraseQuery, queryStr, trimmedSearch
 
     def _removeStopWords(self,wordList):
@@ -201,7 +201,7 @@ class QuerySearch:
             try:
                 #stem search
                 stemResult = {}
-                resultQuery = IndexerTable.select().where((IndexerTable.keyword != word) & (IndexerTable.stem == stem))
+                resultQuery = IndexerTable.select().where((IndexerTable.keyword != word) & (IndexerTable.stem == stem))#TODO test it with .contains(stem)->to get more results
                 if (resultQuery.exists()):
                     for entry in resultQuery:
                         #print(entry)
@@ -236,59 +236,65 @@ class QuerySearch:
     def _phraseLookUp(self,phrase):
 
         results = {}
-        if(phrase.isalnum()):
-            while True:
-               try:
+        pass
 
-                    #print(phrase)
-                    resultQuery = FullPages.select().where(FullPages.pageContent.contains(phrase))
-                    #print(resultQuery.count())
-                    if(resultQuery.exists()):
-                        for entry in resultQuery:
-                            #print(entry)
-                            ...
-                            count = entry.pageContent.count(phrase)
-                            #print(count)
-                            ...
-                            urlRank = self._getPageRank(entry.pageURL)
-                            results.update({entry.pageURL : [urlRank, count]}) #now add imp
-                    break
-               except (OperationalError, sqlite3.OperationalError) as e:
-                   if 'binding' in str(e):
-                       print('QUERY: THIS SHOULD NOT HAPPEN, UNLUCKY!')
-                       break
-                   print('QUERY: Database busy, retrying. Phrase Retrieval')
-               except:
+        #print(phrase)
+        pass
+        #if(phrase.isalnum()):
+        while True:
+           try:
+
+                #print(phrase)
+                resultQuery = FullPages.select().where(FullPages.pageContent.contains(' '+phrase+' ')) #to avoid sub strings
+                #print(resultQuery.count())
+                if(resultQuery.exists()):
+                    for entry in resultQuery:
+                        #print(entry)
+                        ...
+                        count = entry.pageContent.count(' '+phrase+' ')
+                        #print(count)
+                        ...
+                        urlRank = self._getPageRank(entry.pageURL)
+                        results.update({entry.pageURL : [urlRank, count]}) #now add imp
+                break
+           except (OperationalError, sqlite3.OperationalError) as e:
+               if 'binding' in str(e):
                    print('QUERY: THIS SHOULD NOT HAPPEN, UNLUCKY!')
                    break
+               print('QUERY: Database busy, retrying. Phrase Retrieval')
+           except:
+               print('QUERY: THIS SHOULD NOT HAPPEN, UNLUCKY!')
+               break
 
-            ##more phrase importance in results
-            if results:
+        ##more phrase importance in results
+        if results:
+            #print(results)
+            text = phrase.split()
+            text = self._removeStopWords(text)
+            #print(text)
+            if text:
+                #print(text[0])
                 #print(results)
-                text = phrase.split()
-                text = self._removeStopWords(text)
-                #print(text)
-                if text:
-                    #print(text[0])
-                    for x in results:
-                        #print(x)
-                        while True:
-                            try:
-                                results[x].append(IndexerTable.get((IndexerTable.url == x) & \
-                                                                   (IndexerTable.keyword == text[0])).importance)
-                                break
-                            except (OperationalError, sqlite3.OperationalError) as e:
-                                if 'binding' in str(e):
-                                    print('QUERY: THIS SHOULD NOT HAPPEN, UNLUCKY!')
-                                    break
-                                print('QUERY: Database busy, retrying. Phrase Imp')
-                            except:
-                                print("QUERY: can't find phrase in INDEXER!")
-                                break
-                else: #all phrase is stop words
-                    for x in results:
-                        results[x].append(2) #assign this weak phrase with lowest imp
-            #print(results) #rank,count,imp
+                for x in results:
+                    #print(x)
+                    while True:
+                        #try:
+                            results[x].append(IndexerTable.get((IndexerTable.url == x) & \
+                                                               (IndexerTable.keyword == text[0])).importance)
+
+                            break
+                        #except (OperationalError, sqlite3.OperationalError) as e:
+                         #   if 'binding' in str(e):
+                          #      print('QUERY: THIS SHOULD NOT HAPPEN, UNLUCKY!')
+                           #     break
+                            #print('QUERY: Database busy, retrying. Phrase Imp')
+                        #except:
+                         #   print("QUERY: can't find phrase in INDEXER!")
+                          #  break
+            else: #all phrase is stop words
+                for x in results:
+                    results[x].append(2) #assign this weak phrase with lowest imp
+        #print(results) #rank,count,imp
         return results
 
     def _getPageRank(self,url):
@@ -334,12 +340,17 @@ class QuerySearch:
 
 
 '''###################################OUTSIDERS########################################################################'''
+qResultDict = {} #key:query, value: [urls]
+perPage = 10 #num of results displayed per page
+
+'''_________________________________________HELPERS_____________________________________________________________'''
+
 def inputCleanUp(input):
     one = str(input).strip()
     cleanUp = re.compile(r'[\W_]+')
-    ans = cleanUp.sub(' ', one).lower()
+    ans = cleanUp.sub(' ', one).lower().strip()
     #print(ans)
-    return ans.strip()
+    return ans
 
 def sporterStemmer(content):
     return PorterStemmer().stem(content)
@@ -354,35 +365,95 @@ def addSuggestion(content):
     else:
         QuerySuggestion.create(keyword = content, stem = sporterStemmer(content)).update()
 
+def getTitleAndDescription(url,query):
+
+    title = str(FullPages.get(FullPages.pageURL == url).pageTitle)
+    description = str(FullPages.get(FullPages.pageURL == url).pageContent)
+    #description = description[]
+    #print(title)
+    startIdx = description.find(query, len(title))
+    #print(startIdx)
+    if startIdx > -1:
+        description = "..." + description[startIdx - len(title) : startIdx + 200] + "..."
+    else:
+        query = query.split()
+        des = ""
+        for q in query:
+            idx = description.find(q, len(title))
+            check = des.find(q) #haven't seen b4
+            if idx > -1 and check == -1: #found
+                des +="..." + description[idx-len(title) : idx + 200] + "..."
+
+        if des == "": #probably its the title itself
+            description = title + "..." + description[:200] + "..."
+        else:
+            description = des
+    #print(description)
+    #pass #SPLIT QUERY AND ADD SEGMENTS if startIdx == -1
+    return url, title, description
+
 '''-------------------------------------------INTERFACES------------------------------------------------------------'''
 
 '''CALLED while user is typing the req via AJAX'''
 def getSuggestion(typedContent):
     typedContent = inputCleanUp(typedContent)
     #print(typedContent)
-    selectQuery = QuerySuggestion.select().where((QuerySuggestion.keyword.contains(typedContent)) |
+    selectQuery = QuerySuggestion.select(QuerySuggestion.keyword).where((QuerySuggestion.keyword.contains(typedContent)) |
                                                  QuerySuggestion.stem.contains(sporterStemmer(typedContent))
                                                  ).order_by(-QuerySuggestion.count)
 
-    listy = [x.keyword for x in selectQuery]
+    listy = [x.keyword for x in selectQuery[:10]] #top 10 suggestions
 
     return listy
 
 
 '''CAllED when user sends req'''
-def engineSearch(query):
+def engineSearch(query,pageNum = 0):
 
-    res = QuerySearch(query)
-    main, related = res.getSearchResult()
-    if(main or related):
-        addSuggestion(query)
+    cleanedQuery = inputCleanUp(query)
+    if(cleanedQuery not in qResultDict.keys()): #new search
+        res = QuerySearch(query)
+        main, related = res.getSearchResult() #[url,title,description]
+        #qResultDict[query] = main, related
+        qResultDict.update({cleanedQuery: [main,related]})
+        #print(qResultDict)
+        if(main or related):
+            addSuggestion(query)
+    resultsCount = len(qResultDict[cleanedQuery][0]) + len(qResultDict[cleanedQuery][1])
+    #print(resultsCount)
+    totalNeededPages = math.ceil(resultsCount / perPage)
+    #print(totalNeededPages)
+    #pagination
+    pagination = pageNum * perPage
+    mainResult = qResultDict[cleanedQuery][0]
+    mainResultpages = len(mainResult) // perPage
+    mainResultextra = len(mainResult) % perPage
+    #print(mainResultpages, mainResultextra)
+    mainResult = mainResult[pagination : pagination + perPage]
+    relatedResult = []
+    availablePages = len(mainResult)
+    if availablePages != perPage: # add related results
+        relatedResult = qResultDict[cleanedQuery][1]
+        relatedPagination = (pageNum - mainResultpages) * perPage - (mainResultextra - availablePages)
+        relatedResult = relatedResult[relatedPagination : relatedPagination + perPage]
 
+    #title and description
+    print(mainResult)
+    print(relatedResult)
+    finalList = []
+    for result in mainResult:
+        finalList.append((getTitleAndDescription(result,cleanedQuery)))
+    for result in relatedResult:
+        finalList.append((getTitleAndDescription(result, cleanedQuery)))
+
+    print(finalList)
+    return resultsCount , finalList #finalList is a list of tuples(url, title , description)
 
 
 '''..................on typing.....................................'''
-typed = 'hel$%#$#$'
-print(getSuggestion(typed))
+typed =  '\"%&*^#^&$            &%$^&&transistor##\"'
+#print(getSuggestion(typed))
 
 '''..................on request...................................'''
-query = 'hello'
-engineSearch(query)
+query = '\"upon names\"'
+engineSearch(query,)
