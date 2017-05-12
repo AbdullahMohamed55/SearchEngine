@@ -17,8 +17,15 @@ class Indexer:
         self._deleteOldEntries(url)
 
         # for phrase search
-        document = self.phraseParser(content)
-        self.addToFullPages(document, url)
+        #try:
+        document,title = self.phraseParser(content)
+        #except:
+           # print("FUCK!!!")
+        pass
+        if title is None:
+            title = url
+        pass
+        self.addToFullPages(document, url,title.strip())
 
         bulkEntries = []
 
@@ -55,17 +62,18 @@ class Indexer:
                             break
             print("Inserted:",len(bulkEntries),"new entries for url:",url)
 
-    def addToFullPages(self,content,url):
+    def addToFullPages(self,content,url,title):
 
         while True:
             try:
-                FullPages.create(pageURL=url, pageContent=content).update()
+                FullPages.create(pageURL=url, pageContent=content, pageTitle=title).update()
                 break
             except (OperationalError, sqlite3.OperationalError) as e:
                 if 'binding' in str(e):
                     break
                 print('INDEXER: Database busy, retrying. FullPages Insertion')
             except:
+                print("FUCKK")
                 break
 
     def _deleteOldEntries(self,url):
@@ -219,6 +227,8 @@ class Indexer:
                        , soup.h5 , soup.h6]
 
         headers = [str(x) for x in headers if x is not None]
+        #print(headers)
+
         headers = self._initParser(' '.join(headers))
         self._assignImportance(headers, count, 1, importMap)
 
@@ -235,6 +245,35 @@ class Indexer:
     def phraseParser(self,text):
 
         soup = BeautifulSoup(text, 'html.parser')
+        title = None
+        if (soup.title and soup.title.string is not None):
+        #try:
+            title = soup.title.string
+        #except:
+         #   print("AAA")
+        #print(title)
+        if(title is None):
+            # parsing headers
+            headers = [soup.h1, soup.h2, soup.h3, soup.h4
+            , soup.h5, soup.h6]
+
+            headers = [str(x) for x in headers if x is not None]
+            #print(headers)
+            for header in headers:
+                #print(header)
+                soupy = BeautifulSoup(header, 'html.parser')
+                comments = soupy.findAll(text=lambda text: isinstance(header, Comment))
+                [comment.extract() for comment in comments]
+                texts = soupy.find_all(text=True)
+                header = filter(self._visibleText, texts)
+                header = list(header)
+                if len(header) == 1:
+                    title = header[0]
+                    break
+                if(header):
+                    title = header[0]
+            pass
+        #print(soup.get_text())
 
         # ---------------Finding Comments to remove them---------------
         comments = soup.findAll(text=lambda text: isinstance(text, Comment))
@@ -245,10 +284,25 @@ class Indexer:
 
         # ---------------removing the unwanted script and links from the doc and returning list of words------------
         visibleTexts = filter(self._visibleText, texts)
+        '''thefile = open('hopee2.txt', 'w')
+        #print(str(visibleTexts))
+        for item in list(visibleTexts):
+            #if item is not "\n":
+            s = item.rstrip()
+            print('s:', s)
 
+            thefile.write("%s" %s)
+        thefile.close()'''
         # ---------------remove all symbols like #$%@ , spaces and newlines--------------
         parsedWords = self._parseKeywords(list(visibleTexts))
         parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
+        pass #extra spaces!
         space = ' '
         document = space.join(parsedWords)
-        return document
+        #thefile2 = open('hopee.txt', 'w')
+        # print(str(visibleTexts))
+        #for item in parsedWords:
+         #   thefile2.write("%s " % item)
+        #print(document)
+        print(title)
+        return document, title

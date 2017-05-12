@@ -72,6 +72,7 @@ class FullPages(Model):
 
     pageURL = CharField(unique=True)
     pageContent = TextField()
+    pageTitle = TextField()
 
     class Meta:
         database = DBPhrase

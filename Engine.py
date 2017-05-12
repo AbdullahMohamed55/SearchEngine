@@ -86,16 +86,16 @@ class Engine:
             self.crawlerObjs[i].start()
 
         tryFor = NUMOFPAGES #trials for indexer if WebPages table is found empty
-        sleepFor = 20 #secs
-
-        temp = IndexedCount.select().where(IndexedCount.id == 1)
+        sleepFor =10 #secs
+        self.indexed = IndexedCount.get(IndexedCount.id == 1).indexedURLs
+        '''temp = IndexedCount.select().where(IndexedCount.id == 1)
         for x in temp:
-            self.indexed = x.indexedURLs
+            self.indexed = x.indexedURLs'''
 
         print(self.indexed)
         while(tryFor != 0):
             print("INDEXER: Indexer will try to index after %d seconds." % sleepFor)
-            sleep(sleepFor)  # give time for crawling threads to add new urls
+            sleep(randint(1,sleepFor))  # give time for crawling threads to add new urls
             self._indexCrawledPages()
             tryFor -= 1
             print("INDEXER: %d Trials left for indexer." % tryFor)
@@ -107,42 +107,42 @@ class Engine:
         print("INDEXER: Indexing started...")
         start = timeit.default_timer()
         #count = 0
-        while True:
-            try:
-                print("INDEXER: %d found web pages for indexing..." % (abs(WebPages.select().count() - self.indexed)))
-                #print("Crawled table entries: ", CrawledTable.select().count())
-                #print("Uncrawled table entries: ", UncrawledTable.select().count())
-                selector =  WebPages.select().where(WebPages.id > self.indexed)
-                for page in selector:
+        #while True:
+            #try:
+        print("INDEXER: %d found web pages for indexing..." % (WebPages.select().count()))
+        #print("Crawled table entries: ", CrawledTable.select().count())
+        #print("Uncrawled table entries: ", UncrawledTable.select().count())
+        selector =  WebPages.select().where(WebPages.id == self.indexed+1)
+        for page in selector:
 
-                    self.indexer.update(str(page.pageURL), str(page.pageContent))
-                    self.indexed += 1
-                    sleep(randint(1,5))
-                    if(self.indexed % 100 == 0):
-                        while True:
-                            try:
-                                # delete indexed page from WebPages table
-                                dell =WebPages.delete().where(WebPages.id <= self.indexed)
-                                dell.execute()
-                                print("INDEXER: Deleted old entries from WebPages table")
-                                break
-                            except (OperationalError, sqlite3.OperationalError) as e:
-                                if 'binding' in str(e):
-                                    break
-                                print('INDEXER: Database busy, retrying. WebPage delete')
-                                sleep(randint(1,10))
-                            except:
-                                break
-                #WebPages is empty
-                IndexedCount.update(indexedURLs=self.indexed).where(IndexedCount.id == 1).execute()
-                break
-            except (OperationalError, sqlite3.OperationalError) as e:
-                if 'binding' in str(e):
-                    break
-                print("INDEXER: DB Busy: Indexer is Retrying...'")
-                sleep(randint(1, 10))
-            except:
-                break
+            self.indexer.update(str(page.pageURL), str(page.pageContent))
+            self.indexed += 1
+            #sleep(randint(1,5))
+            '''if(self.indexed % 100 == 1):
+                while True:
+                    try:
+                        # delete indexed page from WebPages table
+                        dell =WebPages.delete().where(WebPages.id <= self.indexed)
+                        dell.execute()
+                        print("INDEXER: Deleted old entries from WebPages table")
+                        break
+                    except (OperationalError, sqlite3.OperationalError) as e:
+                        if 'binding' in str(e):
+                            break
+                        print('INDEXER: Database busy, retrying. WebPage delete')
+                        sleep(randint(1,10))
+                    except:
+                        break'''
+        #WebPages is empty
+        IndexedCount.update(indexedURLs=self.indexed).where(IndexedCount.id == 1).execute()
+        '''break
+    except (OperationalError, sqlite3.OperationalError) as e:
+        if 'binding' in str(e):
+            break
+        print("INDEXER: DB Busy: Indexer is Retrying...'")
+        sleep(randint(1, 10))
+    except:
+        break'''
 
         stop = timeit.default_timer()
         print("INDEXER: TOOK :: %.2f mins, %d indexed web pages." % ((stop - start) / 60., self.indexed))
