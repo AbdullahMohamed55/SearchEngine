@@ -18,7 +18,7 @@ class Indexer:
 
         # for phrase search
         #try:
-        document,title = self.phraseParser(content)
+        document,title = self.phraseParser(url,content)
         #except:
            # print("FUCK!!!")
         pass
@@ -72,9 +72,9 @@ class Indexer:
                 if 'binding' in str(e):
                     break
                 print('INDEXER: Database busy, retrying. FullPages Insertion')
-            except:
-                print("FUCKK")
-                break
+            #except:
+                #print("FUCKK")
+                #break
 
     def _deleteOldEntries(self,url):
 
@@ -242,7 +242,7 @@ class Indexer:
 
         return indexMap,importMap
 
-    def phraseParser(self,text):
+    def phraseParser(self,url,text):
 
         soup = BeautifulSoup(text, 'html.parser')
         title = None
@@ -284,25 +284,28 @@ class Indexer:
 
         # ---------------removing the unwanted script and links from the doc and returning list of words------------
         visibleTexts = filter(self._visibleText, texts)
-        '''thefile = open('hopee2.txt', 'w')
-        #print(str(visibleTexts))
-        for item in list(visibleTexts):
-            #if item is not "\n":
-            s = item.rstrip()
-            print('s:', s)
 
-            thefile.write("%s" %s)
-        thefile.close()'''
+
+        #thefile.close()'''
         # ---------------remove all symbols like #$%@ , spaces and newlines--------------
         parsedWords = self._parseKeywords(list(visibleTexts))
         parsedWords = [word for word in parsedWords if word is not ' ' and word is not None]
         pass #extra spaces!
         space = ' '
         document = space.join(parsedWords)
-        #thefile2 = open('hopee.txt', 'w')
-        # print(str(visibleTexts))
-        #for item in parsedWords:
-         #   thefile2.write("%s " % item)
-        #print(document)
+
+        visibleTexts = filter(self._visibleText, texts)
+        waw = list(visibleTexts)
+        listy = [x.strip() for x in waw if x.strip() is not '' and x is not None]
+        fname = url.replace("/", "")
+        with open(fname + '.txt', 'w') as thefile:
+            # print(str(visibleTexts))
+            for item in listy:
+                s = item
+                print('s:', s)
+                thefile.write("%s\n" % s)
+
+
+
         print(title)
         return document, title

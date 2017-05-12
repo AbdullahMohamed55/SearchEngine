@@ -341,7 +341,7 @@ class QuerySearch:
 
 '''###################################OUTSIDERS########################################################################'''
 qResultDict = {} #key:query, value: [urls]
-perPage = 10 #num of results displayed per page
+perPage = 1#10 #num of results displayed per page
 
 '''_________________________________________HELPERS_____________________________________________________________'''
 
@@ -369,10 +369,13 @@ def getTitleAndDescription(url,query):
 
     title = str(FullPages.get(FullPages.pageURL == url).pageTitle)
     description = str(FullPages.get(FullPages.pageURL == url).pageContent)
+    #with open(url.replace("/", "") + '.txt', 'r') as thefile:
+        #disco = thefile.read()
     #description = description[]
-    #print(title)
+    #print(disco)
     startIdx = description.find(query, len(title))
     #print(startIdx)
+    #print(disco.find("FutureStack: London is the UK edition of our flagship user conference"))
     if startIdx > -1:
         description = "..." + description[startIdx - len(title) : startIdx + 200] + "..."
     else:
@@ -459,5 +462,5 @@ typed =  '\"%&*^#^&$            &%$^&&transistor##\"'
 #print(getSuggestion(typed))
 
 '''..................on request...................................'''
-query = '\"upon names\"'
+query = '\"FutureStack: London is the UK edition of our flagship user conference\"'
 engineSearch(query,pageNum=0)
