@@ -390,7 +390,7 @@ def getTitleAndDescription(url,query):
             description = des
     #print(description)
     #pass #SPLIT QUERY AND ADD SEGMENTS if startIdx == -1
-    return url, title, description
+    return title, description
 
 '''-------------------------------------------INTERFACES------------------------------------------------------------'''
 
@@ -438,16 +438,20 @@ def engineSearch(query,pageNum = 0):
         relatedResult = relatedResult[relatedPagination : relatedPagination + perPage]
 
     #title and description
-    print(mainResult)
-    print(relatedResult)
+    #print(mainResult)
+    #print(relatedResult)
     finalList = []
+    "add exact/main results for this pageNum"
     for result in mainResult:
-        finalList.append((getTitleAndDescription(result,cleanedQuery)))
+        title, des = getTitleAndDescription(result, cleanedQuery)
+        finalList.append(("main", result, title, des))
+    "add related results (if exists) for this pageNum"
     for result in relatedResult:
-        finalList.append((getTitleAndDescription(result, cleanedQuery)))
+        title, des = getTitleAndDescription(result, cleanedQuery)
+        finalList.append(("related", result, title, des))
 
-    print(finalList)
-    return resultsCount , finalList #finalList is a list of tuples(url, title , description)
+    #print(finalList)
+    return resultsCount , finalList #finalList is a list of tuples("main"/"related",url, title , description)
 
 
 '''..................on typing.....................................'''
@@ -456,4 +460,4 @@ typed =  '\"%&*^#^&$            &%$^&&transistor##\"'
 
 '''..................on request...................................'''
 query = '\"upon names\"'
-engineSearch(query,)
+engineSearch(query,pageNum=0)
