@@ -11,7 +11,7 @@ import urllib.robotparser
 from html.parser import HTMLParser
 
 #Number of pages to crawl for per run.
-NUMOFPAGES = 1000000
+NUMOFPAGES = 200
 
 class Crawler(threading.Thread):
 

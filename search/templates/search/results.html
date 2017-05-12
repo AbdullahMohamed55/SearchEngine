@@ -1,0 +1,70 @@
+﻿{% load static %}
+<!doctype html>
+<HTML>
+	<HEAD>
+		<meta charset="utf-8">
+		<TITLE>Search Engine - {{ query }} - Page {{ page }}</TITLE>
+		<link href = "https://code.jquery.com/ui/1.10.4/themes/dark-hive/jquery-ui.css" rel = "stylesheet">
+		<script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
+		<script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+		<link rel="stylesheet" type="text/css" href="{% static 'search/style.css' %}" />
+		<link rel="shortcut icon" href="{%  static 'favicon.ico' %}">
+		
+		<script>
+			$(function() {
+							var options = {
+					source: "/api/suggestions/",
+					minlength: 2
+				};
+
+				$(".box").autocomplete(options);
+			 });
+		</script>
+	</HEAD>
+	<BODY BGCOLOR="FFFFFF">
+		<div id="resultssearchdiv">
+			<div id="resultslogodiv">
+				<a href="{% url 'search:index' %}"><IMG SRC="{% static 'search/logo.png' %}" id = "resultslogo"></a>
+			</div>
+			<form action="{% url 'search:results' %}" method="get" id="resultsform">
+				<div id = "resultsboxdiv">
+					<input type="text" required oninvalid="this.setCustomValidity('')" name="query" value="{{ query }}" class = "box" id = "resultsbox" >
+				</div>
+				<div id = "resultsbuttondiv">
+					<input type="submit" value="Search" class = "button" id = "resultsbutton">
+				</div>
+			</form>
+		</div>
+		<div id="resultsresultsdiv">
+			{% if results %}
+				<b>Results found: {{ numofresults }} - Showing page {{ page }} of {{ numofpages }}</b>
+				<br>
+				<ul>
+					{% for result in results %}
+						<li>
+						<a href="{{ result.url }}"><h3>{{ result.title }}</h3></a><br>
+						<h5>{{ result.url }}</h5><br>
+						<p>{{ result.description }}</p>
+						</li>
+						<br>
+					{% endfor %}
+				</ul>
+			{% else %}
+				<b>No results found.</b>
+			{% endif %}
+		</div>
+		{% if results %}
+			<div id = "resultspagesdiv" align = "bottom">
+				<center>
+					{% for pageno in pagedivpagesbefore %}
+						<a href="{% url 'search:results' %}?query={{ query }}&page={{ pageno }}">{{ pageno }}</a>
+					{% endfor %}
+						{{ page }}  
+					{% for pageno in pagedivpagesafter %}
+						<a href="{% url 'search:results' %}?query={{ query }}&page={{ pageno }}">{{ pageno }}</a>
+					{% endfor %}
+				</center>
+			</div>
+		{% endif %}
+	</BODY>
+</HTML>

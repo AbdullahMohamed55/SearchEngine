@@ -1,0 +1,116 @@
+a {
+	display: inline;
+	clear: none;
+	text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	display: inline;
+}
+
+h5 {
+	color: green;
+}
+
+p {
+	margin-top: 5px;
+}
+ul {
+	padding: 0;
+	list-style-type: bullet;
+}
+#indexdiv{
+	transform: translate(0, 20%);
+}
+
+#resultspagesdiv{
+	font-size: 18px;
+	font-family: Arial Black;
+	
+}
+
+.button {
+
+	color: white;
+	font-family: Arial Black;
+	background-color: black;
+	border-style: solid;
+	border-color: black;
+	border-radius: 10px;
+	height: 40px;
+
+}
+
+.box {
+	
+	border-color: black;
+	border-style: solid;
+	border-radius: 10px;
+	font-family: Arial Black;
+
+}
+
+#indexbox {
+	padding: 10px;
+	width: 50%;
+	height: 20px;
+}
+
+#resultssearchdiv {
+	width: 100%;
+	height: 10%;
+}
+
+#resultslogodiv{
+	width:10%;
+	height:10%;
+	float: left;
+}
+
+#resultsboxdiv{
+	width:40%;
+	height:10%;
+	float: left;
+}
+
+#resultsbuttondiv{
+
+	height:10%;
+	width:10%;
+	float: left;
+	margin-left: 10px;
+	margin-top: 2px;
+}
+
+#resultsresultsdiv{
+	clear: left;
+	width: 40%;
+	margin-left: 11%;
+}
+
+#resultslogo{
+
+	float:left;
+	WIDTH:100%;
+	HEIGHT:10%;
+}
+
+#resultsbox{
+	padding: 10px;
+	margin-top: 5%;
+	margin-left: 10px;
+	height: 20px;
+	width:100%;
+	
+}
+
+#resultsbutton{
+	margin-top: 20%;
+	margin-left: 40px;
+	margin-bottom: 10%;
+}
+
+
+textarea:focus, input:focus{
+    outline: none;
+}

@@ -1,5 +1,6 @@
 from nltk.stem.porter import *
 from nltk.corpus import stopwords
+
 from Model import PageRank, IndexerTable, FullPages,QuerySuggestion, \
     DBIndexer, DBPageRank, DBPhrase, DBQuery
 import math
@@ -28,7 +29,6 @@ class QuerySearch:
 
         self.query, self.stemmedQuery, self.isPhrase, \
         self.phraseQuery, self.queryStr, self.trimmedSearch = self.queryProcessor(query)
-
         #print(self.query)
         #print(self.phraseQuery)
         #print(self.isPhrase)
@@ -341,7 +341,7 @@ class QuerySearch:
 
 '''###################################OUTSIDERS########################################################################'''
 qResultDict = {} #key:query, value: [urls]
-perPage = 1#10 #num of results displayed per page
+perPage = 10#10 #num of results displayed per page
 
 '''_________________________________________HELPERS_____________________________________________________________'''
 
@@ -458,9 +458,9 @@ def engineSearch(query,pageNum = 0):
 
 
 '''..................on typing.....................................'''
-typed =  '\"%&*^#^&$            &%$^&&transistor##\"'
+#typed =  '\"%&*^#^&$            &%$^&&transistor##\"'
 #print(getSuggestion(typed))
 
 '''..................on request...................................'''
-query = '\"FutureStack: London is the UK edition of our flagship user conference\"'
-engineSearch(query,pageNum=0)
+#query = '\"FutureStack: London is the UK edition of our flagship user conference\"'
+#engineSearch(query,pageNum=0)

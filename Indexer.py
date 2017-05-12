@@ -298,12 +298,12 @@ class Indexer:
         waw = list(visibleTexts)
         listy = [x.strip() for x in waw if x.strip() is not '' and x is not None]
         fname = url.replace("/", "")
-        with open(fname + '.txt', 'w') as thefile:
-            # print(str(visibleTexts))
-            for item in listy:
-                s = item
-                print('s:', s)
-                thefile.write("%s\n" % s)
+        #with open(fname + '.txt', 'w') as thefile:
+        #    # print(str(visibleTexts))
+        #    for item in listy:
+        #        s = item
+        #        print('s:', s)
+        #        thefile.write("%s\n" % s)
 
 
 
