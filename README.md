@@ -9,4 +9,5 @@ Engine Crawler and Indexer implemented.
 - BeautifulSoup
 - nltk
 - sqlite3
- 
+- peewee
+- Django 
