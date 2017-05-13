@@ -20,6 +20,14 @@
 				$(".box").autocomplete(options);
 			 });
 		</script>
+		
+		<SCRIPT type=text/javascript>
+			function checksend(){
+				if(document.getElementById("resultsbox").value.length > 0){
+					document.getElementById("resultsform").submit();
+				}
+			}
+		</SCRIPT>
 	</HEAD>
 	<BODY BGCOLOR="FFFFFF">
 		<div id="resultssearchdiv">
@@ -28,10 +36,10 @@
 			</div>
 			<form action="{% url 'search:results' %}" method="get" id="resultsform">
 				<div id = "resultsboxdiv">
-					<input type="text" required oninvalid="this.setCustomValidity('')" name="query" value="{{ query }}" class = "box" id = "resultsbox" >
+					<input type="text" name="query" value="{{ query }}" class = "box" id = "resultsbox" >
 				</div>
 				<div id = "resultsbuttondiv">
-					<input type="submit" value="Search" class = "button" id = "resultsbutton">
+					<input type="button" value="Search" class = "button" id = "resultsbutton" onclick="checksend();">
 				</div>
 			</form>
 		</div>

@@ -1,35 +1,42 @@
 {% load static %}
 <!doctype html>
 <HTML>
-<HEAD>
-	<meta charset="utf-8">
-	<TITLE>Search Engine</TITLE>
-	<link href = "https://code.jquery.com/ui/1.10.4/themes/dark-hive/jquery-ui.css" rel = "stylesheet">
-    <script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
-    <script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
-	<link rel="stylesheet" type="text/css" href="{% static 'search/style.css' %}" />
-	<link rel="shortcut icon" href="{%  static 'favicon.ico' %}">
-	
-	<script>
-		$(function() {
-						var options = {
-				source: "/api/suggestions/",
-				minlength: 2
-			};
+	<HEAD>
+		<meta charset="utf-8">
+		<TITLE>Search Engine</TITLE>
+		<link href = "https://code.jquery.com/ui/1.10.4/themes/dark-hive/jquery-ui.css" rel = "stylesheet">
+		<script src = "https://code.jquery.com/jquery-1.10.2.js"></script>
+		<script src = "https://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+		<link rel="stylesheet" type="text/css" href="{% static 'search/style.css' %}" />
+		<link rel="shortcut icon" href="{%  static 'favicon.ico' %}">
+		
+		<script>
+			$(function() {
+							var options = {
+					source: "/api/suggestions/",
+					minlength: 2
+				};
 
-			$(".box").autocomplete(options);
-         });
-	</script>
-</HEAD>
+				$(".box").autocomplete(options);
+			 });
+		</script>
+		<SCRIPT type=text/javascript>
+				function checksend(){
+					if(document.getElementById("indexbox").value.length > 0){
+						document.getElementById("indexform").submit();
+					}
+				}
+		</SCRIPT>
+	</HEAD>
 	<div id="indexdiv">
 	<BODY BGCOLOR="FFFFFF">
 		<CENTER><IMG SRC="{% static 'search/logo.png' %}" ALIGN="BOTTOM" WIDTH="25%" HEIGHT="50%"> </CENTER>
 		<CENTER>
 		<br><br>
-		<form action="{% url 'search:results' %}" method="get">
-		  <input type="text" required oninvalid="this.setCustomValidity('')" name="query" placeholder="Search for..." class = "box" id = "indexbox"><br>
+		<form action="{% url 'search:results' %}" method="get" id="indexform">
+		  <input type="text" name="query" placeholder="Search for..." class = "box" id = "indexbox"><br>
 		  <br>
-		  <input type="submit" value="Search" class = "button">
+		  <input type="button" value="Search" class = "button" onclick="checksend();">
 		</form>
 		</CENTER>
 	</BODY>
