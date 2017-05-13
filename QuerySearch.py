@@ -5,7 +5,7 @@ from Model import PageRank, IndexerTable, FullPages,QuerySuggestion, \
     DBIndexer, DBPageRank, DBPhrase, DBQuery
 import math
 import sqlite3
-from peewee import OperationalError
+from peewee import *
 
 ...
 WORDLIMIT = 20
@@ -400,13 +400,13 @@ def getTitleAndDescription(url,query):
 '''CALLED while user is typing the req via AJAX'''
 def getSuggestion(typedContent):
     typedContent = inputCleanUp(typedContent)
-    #print(typedContent)
-    selectQuery = QuerySuggestion.select(QuerySuggestion.keyword).where((QuerySuggestion.keyword.contains(typedContent)) |
-                                                 QuerySuggestion.stem.contains(sporterStemmer(typedContent))
+    print(typedContent)
+    selectQuery = QuerySuggestion.select(QuerySuggestion.keyword).where((fn.Lower(fn.Substr(QuerySuggestion.keyword, 1, len(typedContent))) == typedContent) |
+                                                                        (fn.Lower(fn.Substr(QuerySuggestion.stem,1,len(typedContent))) == (sporterStemmer(typedContent)))
                                                  ).order_by(-QuerySuggestion.count)
 
     listy = [x.keyword for x in selectQuery[:10]] #top 10 suggestions
-
+    print(listy)
     return listy
 
 
@@ -453,6 +453,9 @@ def engineSearch(query,pageNum = 0):
         title, des = getTitleAndDescription(result, cleanedQuery)
         finalList.append(("related", result, title, des))
 
+    #add suggestion
+    if finalList:
+            addSuggestion(cleanedQuery)
     #print(finalList)
     return resultsCount , finalList #finalList is a list of tuples("main"/"related",url, title , description)
 
